@@ -1,0 +1,140 @@
+{
+  "note": "Public GIS approximation, not a survey. South edge assumed street frontage; confirm imagery.",
+  "units": "US survey feet (EPSG2236)",
+  "origin2236": [
+    935398.5492518991,
+    567834.0107849985
+  ],
+  "angleFromEastDegrees": 3.0536973651297306,
+  "parcelAreaSqft": 9554.895202636719,
+  "parcelSides": [
+    {
+      "from": 0,
+      "to": 1,
+      "lengthFt": 82.44387891859915,
+      "bearingDegrees": 266.9463026348703
+    },
+    {
+      "from": 1,
+      "to": 2,
+      "lengthFt": 117.44762830805331,
+      "bearingDegrees": 355.7918812380071
+    },
+    {
+      "from": 2,
+      "to": 3,
+      "lengthFt": 80.63414475804356,
+      "bearingDegrees": 87.27551199528853
+    },
+    {
+      "from": 3,
+      "to": 4,
+      "lengthFt": 117.03505861442204,
+      "bearingDegrees": 174.90082904647318
+    }
+  ],
+  "parcelLocal": [
+    [
+      82.444,
+      0
+    ],
+    [
+      0,
+      0
+    ],
+    [
+      -2.366,
+      117.424
+    ],
+    [
+      78.267,
+      116.96
+    ],
+    [
+      82.444,
+      0
+    ]
+  ],
+  "buildingLocal": [
+    [
+      73.833,
+      85.281
+    ],
+    [
+      73.397,
+      14.565
+    ],
+    [
+      56.361,
+      14.671
+    ],
+    [
+      56.407,
+      22.084
+    ],
+    [
+      49.81,
+      22.124
+    ],
+    [
+      49.783,
+      17.674
+    ],
+    [
+      23.584,
+      17.835
+    ],
+    [
+      23.651,
+      28.719
+    ],
+    [
+      9.33,
+      28.807
+    ],
+    [
+      9.525,
+      60.567
+    ],
+    [
+      15.434,
+      60.53
+    ],
+    [
+      15.523,
+      75.034
+    ],
+    [
+      33.98,
+      74.92
+    ],
+    [
+      33.921,
+      65.4
+    ],
+    [
+      55.303,
+      65.268
+    ],
+    [
+      55.427,
+      85.395
+    ],
+    [
+      73.833,
+      85.281
+    ]
+  ],
+  "buildingAttributes": {
+    "OBJECTID": 202669,
+    "UNIQUEID": "D3_Small_Building_87364",
+    "SOURCE": "L",
+    "YEARUPDATE": 2015,
+    "TYPE": "S",
+    "HEIGHT": null,
+    "GlobalID": "adbee569-1b3d-4fcc-bc2b-ba5232d4e887",
+    "Shape__Area": 396.2265625,
+    "Shape__Length": 101.10452423203719
+  },
+  "buildingAreaSqft": 3437.4664390000003
+}

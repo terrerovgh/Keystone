@@ -25,16 +25,27 @@ export function bounds(p:MultiPolygon){const pts=p.flat(2);return pts.length?{x:
 export const mapPoly=(p:MultiPolygon,fn:(p:Point)=>Point):MultiPolygon=>p.map(poly=>poly.map(r=>r.map(fn)));
 export function pathData(p:MultiPolygon){return p.map(poly=>poly.map(r=>`M${r.map(pt=>pt.map(n=>n.toFixed(4)).join(',')).join('L')}Z`).join('')).join('');}
 export interface Tile {id:string; polygon:MultiPolygon; full:boolean; row:number; col:number; x:number; z:number;}
-export interface Surface {net:MultiPolygon; paving:MultiPolygon; paths:MultiPolygon; concrete:MultiPolygon; grass:MultiPolygon; gardens:MultiPolygon; tiles:Tile[]; turfCuts:MultiPolygon[]; elevated:MultiPolygon;}
+export interface Surface {net:MultiPolygon; paving:MultiPolygon; paths:MultiPolygon; concrete:MultiPolygon; grass:MultiPolygon; gardens:MultiPolygon; tiles:Tile[]; pathTiles:Tile[]; turfCuts:MultiPolygon[]; elevated:MultiPolygon;}
 export function footprint(elements:Element[],zone:Zone){
-  const es=elements.filter(e=>e.zone===zone&&e.action!=='retirar');
-  const exclusions=union(es.filter(e=>['garden','pool','house','dock','stairs'].includes(e.kind)).map(polyFor));
-  const paths=difference(union(es.filter(e=>e.kind==='path').map(polyFor)),exclusions);
-  const paving=difference(union(es.filter(e=>e.kind==='paving').map(polyFor)),union([exclusions,paths]));
-  return {paving,paths,net:union([paving,paths]),gardens:union(es.filter(e=>e.kind==='garden').map(polyFor))};
+  const active=elements.filter(e=>e.action!=='retirar');
+  const hard=union(active.filter(e=>['pool','house','dock','stairs','fixed'].includes(e.kind)).map(polyFor));
+  const allPaths=difference(union(active.filter(e=>e.kind==='path').map(polyFor)),hard);
+  const allGardens=difference(union(active.filter(e=>e.kind==='garden').map(polyFor)),union([hard,allPaths]));
+  const exclusion=union([hard,allGardens]);
+  const es=active.filter(e=>e.zone===zone);
+  // Front owns any overlap between zones. This keeps material totals deterministic.
+  const frontPriority=zone==='back'?union(active.filter(e=>e.zone==='front'&&['paving','path'].includes(e.kind)).map(polyFor)):[];
+  const paths=difference(union(es.filter(e=>e.kind==='path').map(polyFor)),union([exclusion,frontPriority]));
+  const paving=difference(union(es.filter(e=>e.kind==='paving').map(polyFor)),union([exclusion,allPaths,frontPriority]));
+  return {paving,paths,net:union([paving,paths]),gardens:intersection(allGardens,union(es.filter(e=>e.kind==='garden').map(polyFor)))};
+}
+export function demolitionFor(existing:Element[],proposed:Element[],zone:Zone){return difference(footprint(existing,zone).net,union(proposed.filter(e=>['paving','path'].includes(e.kind)&&e.action==='conservar').map(polyFor)))}
+export function visibleFootprint(e:Element,elements:Element[]){
+ const hard=union(elements.filter(x=>x.id!==e.id&&x.action!=='retirar'&&['pool','house','dock','stairs','fixed'].includes(x.kind)).map(polyFor));
+ return e.kind==='garden'?difference(polyFor(e),union([hard,...elements.filter(x=>x.kind==='path'&&x.action!=='retirar').map(polyFor)])):polyFor(e);
 }
 export function surface(proposal:Proposal,zone:Zone):Surface {
-  const {elements,settings:s}=proposal, {paving,paths,net,gardens}=footprint(elements,zone);
+  const {elements,settings:s}=proposal, {paving,paths,net,gardens}=footprint(elements.map(e=>['paving','path'].includes(e.kind)&&e.action==='conservar'?{...e,kind:'fixed' as const}:e),zone);
   const local=(p:Point)=>{const q=rotate([p[0]-s.gridX,p[1]-s.gridZ],-s.angle);return q};
   const global=(p:Point)=>{const q=rotate(p,s.angle);return [q[0]+s.gridX,q[1]+s.gridZ] as Point};
   const domain=mapPoly(paving,local),b=bounds(domain),pitch=s.tile+s.gap;
@@ -54,8 +65,10 @@ export function surface(proposal:Proposal,zone:Zone):Surface {
     for(const cut of [v,h])if(area(cut)>1e-6)turfCuts.push(mapPoly(cut,global));
   }
   const concrete=union(concreteShapes),grass=difference(net,concrete);
-  const elevated=intersection(net,union(elements.filter(e=>e.zone===zone&&e.kind==='paving'&&e.support!=='terreno'&&e.action!=='retirar').map(polyFor)));
-  return {net,paving,paths,concrete,grass,gardens,tiles,turfCuts,elevated};
+  const elevated=intersection(net,union(elements.filter(e=>e.zone===zone&&['paving','path'].includes(e.kind)&&e.support!=='terreno'&&e.action!=='retirar').map(polyFor)));
+  const pathDomain=mapPoly(paths,local),pb=bounds(pathDomain),pathTiles:Tile[]=[];if((Math.ceil((pb.maxX-pb.x)/s.tile)+2)*(Math.ceil((pb.maxZ-pb.z)/s.tile)+2)>16000)throw new Error('El camino supera 16.000 piezas. Aumenta el formato o reduce el contorno.');
+  for(let row=Math.floor(pb.z/s.tile);row<Math.ceil(pb.maxZ/s.tile);row++)for(let col=Math.floor(pb.x/s.tile);col<Math.ceil(pb.maxX/s.tile);col++){const cell=intersection(pathDomain,rect(col*s.tile,row*s.tile,s.tile,s.tile));if(area(cell)>1e-6)pathTiles.push({id:`path:${zone}:${col}:${row}`,polygon:mapPoly(cell,global),full:Math.abs(area(cell)-s.tile*s.tile)<1e-4,row,col,x:col*s.tile,z:row*s.tile})}
+  return {net,paving,paths,concrete,grass,gardens,tiles,pathTiles,turfCuts,elevated};
 }
 export function turfRolls(cuts:MultiPolygon[],rollWidth:number,rollLength:number,waste:number,angle=0){
   // Fixed grain direction. Each clipped strip is cut from its bounding rectangle;
@@ -66,6 +79,8 @@ export function turfRolls(cuts:MultiPolygon[],rollWidth:number,rollLength:number
   pieces.sort((a,b)=>b.l-a.l||b.w-a.w);
   const shelves:{used:number;l:number}[]=[];
   for(const b of pieces){const shelf=shelves.find(s=>s.used+b.w<=rollWidth+1e-8&&s.l+1e-8>=b.l);if(shelf)shelf.used+=b.w;else shelves.push({used:b.w,l:b.l})}
-  const linear=shelves.reduce((s,r)=>s+r.l,0)*(1+waste/100);
-  return {linear,area:linear*rollWidth,rolls:Math.ceil(linear/rollLength),pieces:pieces.length};
+  const cutLinear=shelves.reduce((s,r)=>s+r.l,0),linear=cutLinear*(1+waste/100);
+  const bins:number[]=[];for(const shelf of [...shelves].sort((a,b)=>b.l-a.l)){const i=bins.findIndex(b=>b+shelf.l<=rollLength+1e-8);if(i<0)bins.push(shelf.l);else bins[i]+=shelf.l}
+  const reserve=cutLinear*waste/100;let left=reserve;for(let i=0;i<bins.length&&left>0;i++){const used=Math.min(rollLength-bins[i],left);bins[i]+=used;left-=used}while(left>1e-8){const use=Math.min(rollLength,left);bins.push(use);left-=use}
+  return {linear,area:linear*rollWidth,rolls:bins.length,pieces:pieces.length,cutLinear,wholeRollArea:bins.length*rollWidth*rollLength,packing:bins};
 }

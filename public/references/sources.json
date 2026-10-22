@@ -1,0 +1,58 @@
+{
+  "parcel": {
+    "source": "Miami-Dade County MD_NSPApp Parcel_poly",
+    "layer": "https://gisweb.miamidade.gov/arcgis/rest/services/MD_NSPApp/MapServer/1",
+    "query": "https://gisweb.miamidade.gov/arcgis/rest/services/MD_NSPApp/MapServer/1/query?where=FOLIO%3D%270622280130130%27&outFields=FOLIO&returnGeometry=true&outSR=2236&f=pjson",
+    "accuracy": "Public GIS polygon, not a legal boundary survey",
+    "dataDate": null
+  },
+  "building": {
+    "source": "Miami-Dade County BuildingFootprint2D",
+    "layer": "https://services.arcgis.com/8Pc9XBTAsYuxx9Ny/ArcGIS/rest/services/BuildingFootprint2D_gdb/FeatureServer/0",
+    "query": "https://services.arcgis.com/8Pc9XBTAsYuxx9Ny/ArcGIS/rest/services/BuildingFootprint2D_gdb/FeatureServer/0/query?objectIds=202669&outFields=OBJECTID,UNIQUEID,SOURCE,YEARUPDATE,HEIGHT&returnGeometry=true&outSR=2236&f=pjson",
+    "featureDate": 2015,
+    "height": null,
+    "accuracy": "LiDAR-derived planimetric footprint; no measured roof or floor levels"
+  },
+  "orthophoto": {
+    "source": "Miami-Dade County GIS Groups",
+    "layer": "https://gisweb.miamidade.gov/arcgis/rest/services/MapCache/MDCImagery/MapServer",
+    "feature": "2026_316054E_RGBN",
+    "nominalPixelFeet": 0.25,
+    "year": 2026,
+    "captureDate": null,
+    "metadataWarning": "MapServer description says2025, serviceDescription says2026; local footprint Name confirms2026, exact flight date not supplied.",
+    "persistentImageUrl": "https://gisweb.miamidade.gov/arcgis/rest/services/MapCache/MDCImagery/MapServer/export?bbox=935370%2C567800%2C935510%2C568000&bboxSR=2236&imageSR=2236&size=700%2C1000&dpi=96&format=png32&transparent=false&layers=show%3A29&f=image"
+  },
+  "photos": {
+    "listing": "https://www.apartments.com/2331-keystone-blvd-north-miami-fl/fer33vt/",
+    "galleryCountAdvertised": 27,
+    "accessibleLinks": [
+      "https://images1.apartments.com/i2/bCTW9diPQug1zKk3JpoaHkbWp9piNpfIBbmU4u2Nfv8/116/2331-keystone-blvd-north-miami-fl-primary-photo.jpg?p=1",
+      "https://images1.apartments.com/i2/x1WKbp9h2lWXYqlOnJGr1f0cyXl4CUz8YL0PtL1D6bc/111/2331-keystone-blvd-north-miami-fl-building-photo.jpg?p=1",
+      "https://images1.apartments.com/i2/Gcy48gMsWJHgN3T1huE40Hfo9rT8de-fSBiJjZsEpiw/111/2331-keystone-blvd-north-miami-fl-building-photo.jpg?p=1",
+      "https://images1.apartments.com/i2/j7DQnepvpB3o8aA2mnwWao_4XK9_aka8ZFNMF552TXA/111/2331-keystone-blvd-north-miami-fl-building-photo.jpg?p=1",
+      "https://images1.apartments.com/i2/T7AcGjpU14HWRVhZ8W0mCfWCZJwFMp799Flpeh8OHuc/111/2331-keystone-blvd-north-miami-fl-building-photo.jpg?p=1"
+    ],
+    "note": "Exterior views not visually verified in this subtask. No images downloaded."
+  },
+  "checkedDate": "2026-10-22",
+  "appleLookAround": {
+    "source": "Apple Maps / Look Around",
+    "url": "https://maps.apple.com/look-around?address=2331+Keystone+Blvd%2C+North+Miami%2C+FL++33181%2C+United+States&coordinate=25.893525%2C-80.150526&name=2331+Keystone+Blvd&_mvs=Ci0JuK78Q63kOUARAWkxWqIJVMAZAAAseKHwN8AhNtjMJJkW%2Bz8pGnK7%2BoFPOj8%3D",
+    "captureDate": null,
+    "consulted": "2026-10-22",
+    "observations": [
+      "Arched upper left window",
+      "Central upper semicircular window",
+      "Entry tower with round window and hip roof",
+      "Timber carports on both sides",
+      "Curved central garden and two driveway openings"
+    ],
+    "files": [
+      "apple-lookaround-frente.png",
+      "apple-lookaround-derecha.png"
+    ],
+    "accuracy": "Visual reference only. No dimensions derived from perspective imagery."
+  }
+}

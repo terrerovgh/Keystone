@@ -1,82 +1,67 @@
 'use client';
-import { useRef, useState } from 'react';
-import { bounds, mapPoly, pathData, polyFor, rect, rotate, surface, type Surface } from '@/lib/geometry';
-import { fmt, type Element, type Point, type Proposal, type Zone } from '@/lib/project';
+import { useEffect, useRef, useState } from 'react';
+import { area, demolitionFor, bounds, footprint, mapPoly, pathData, polyFor, rect, ringFor, rotate, visibleFootprint, type Surface } from '@/lib/geometry';
+import { edgeDimensions } from '@/lib/engineering';
+import { feetLabel, referenceFrame, SITE } from '@/lib/site-reference';
+import { type Element, type Kind, type Point, type Proposal, type Zone } from '@/lib/project';
 export type Stage='proposed'|'existing'|'demolition';
-export interface ViewProps {
-  proposal:Proposal; zone:Zone; stage:Stage; existing:Element[]; data:Surface;
-  selected:string|null; onSelect:(id:string|null)=>void; onChange:(id:string,patch:Partial<Element>)=>void;
-  tool:'select'|'move'|'vertices'|'tile'|'pan'; dimensions:boolean; onTile:(id:string)=>void;
-}
-export default function PlanView({proposal,zone,stage,existing,data,selected,onSelect,onChange,tool,dimensions,onTile}:ViewProps){
-  const svg=useRef<SVGSVGElement>(null),[zoom,setZoom]=useState(1),[pan,setPan]=useState<Point>([0,0]);
-  const drag=useRef<{id:string;start:Point;original:Element;vertex?:number;pan?:Point;last?:Point}|null>(null);
-  const es=stage==='proposed'?proposal.elements:existing;
-  const view=zone==='front'?{x:-6,y:-49,w:87,h:56}:{x:-6,y:-128,w:87,h:55};
-  const bw=view.w/zoom,bh=view.h/zoom,vx=view.x+(view.w-bw)/2+pan[0],vy=view.y+(view.h-bh)/2+pan[1];
-  const point=(event:React.PointerEvent):Point=>{const p=svg.current!.createSVGPoint();p.x=event.clientX;p.y=event.clientY;const q=p.matrixTransform(svg.current!.getScreenCTM()!.inverse());return [q.x,-q.y]};
-  const start=(event:React.PointerEvent,e:Element,vertex?:number)=>{
-    if(stage!=='proposed')return;event.stopPropagation();onSelect(e.id);
-    if((e.locked&&vertex===undefined)||tool==='tile')return;
-    if(tool==='move'||tool==='vertices'||vertex!==undefined){event.currentTarget.setPointerCapture(event.pointerId);drag.current={id:e.id,start:point(event),original:structuredClone(e),vertex};}
-  };
-  const move=(event:React.PointerEvent)=>{
-    const d=drag.current;if(!d)return;const p=point(event);const snap=(n:number)=>event.shiftKey?n:Math.round(n*4)/4;
-    if(d.pan){setPan([d.pan[0]-(p[0]-d.start[0]),d.pan[1]+(p[1]-d.start[1])]);return;}
-    d.last=p;
-    // Preview geometry is updated in the SVG only; one undo step is committed on release.
-    if(d.vertex===undefined){const g=svg.current?.querySelector(`[data-element="${d.id}"]`);g?.setAttribute('transform',`translate(${snap(p[0]-d.start[0])} ${snap(p[1]-d.start[1])})`)}
-    else {const handle=svg.current?.querySelector(`[data-vertex="${d.vertex}"]`);handle?.setAttribute('cx',String(p[0]));handle?.setAttribute('cy',String(p[1]));}
-  };
-  const end=()=>{const d=drag.current;drag.current=null;if(!d||!d.last||d.pan)return;const dx=d.last[0]-d.start[0],dz=d.last[1]-d.start[1];const snap=(n:number)=>Math.round(n*4)/4;
-    svg.current?.querySelector(`[data-element="${d.id}"]`)?.removeAttribute('transform');
-    if(d.vertex!==undefined&&d.original.points){const delta=rotate([dx,dz],-d.original.rotation);const pts=structuredClone(d.original.points);pts[d.vertex]=[snap(pts[d.vertex][0]+delta[0]),snap(pts[d.vertex][1]+delta[1])];onChange(d.id,{points:pts});}
-    else if(Math.abs(dx)+Math.abs(dz)>0.03)onChange(d.id,{x:snap(d.original.x+dx),z:snap(d.original.z+dz)});
-  };
-  const sel=es.find(e=>e.id===selected),sb=sel?bounds(polyFor(sel)):null;
-  const localSurface=stage==='proposed'?data:surface({...proposal,elements:existing,exceptions:{}},zone);
-  return <div className={`plan-wrap tool-${tool}`}>
-    <svg ref={svg} className="plan-canvas" viewBox={`${vx} ${vy} ${bw} ${bh}`} role="img" aria-label={`Plano editable del ${zone==='front'?'frente':'patio'}`}
-      onPointerMove={move} onPointerUp={end} onPointerCancel={()=>{drag.current=null}}
-      onPointerDown={event=>{if(tool==='pan'){event.currentTarget.setPointerCapture(event.pointerId);drag.current={id:'',start:point(event),original:es[0],pan:[...pan]};}else onSelect(null)}}
-      onWheel={event=>{setZoom(z=>Math.max(0.6,Math.min(4,z*(event.deltaY<0?1.12:0.9))))}}>
-      <defs><pattern id="dots" patternUnits="userSpaceOnUse" width="2" height="2"><circle cx="0" cy="0" r="0.055" fill="#b7bab0"/></pattern></defs>
-      <rect x={vx} y={vy} width={bw} height={bh} fill="#f2f3ed"/><rect x={vx} y={vy} width={bw} height={bh} fill="url(#dots)"/>
-      <g transform="scale(1,-1)">
-        <rect x="0" y="0" width="75" height="125" fill="#c0cba9" stroke="#819071" strokeDasharray="0.5 0.5" strokeWidth=".12"/>
-        <rect x="-20" y="-10" width="115" height="8" fill="#d4d4cd"/>
-        <rect x="-20" y="5" width="115" height="3" fill="#e5e4dc" stroke="#c8c9c0" strokeWidth=".1"/>
-        <rect x="-20" y="125" width="115" height="20" fill="#b0ceca"/>
-        {stage==='proposed'?<>
-          <path d={pathData(data.grass)} fill={proposal.settings.turf==='natural'?'#91a36e':'#758b58'} fillRule="evenodd"/>
-          <path d={pathData(data.paths)} fill={proposal.settings.concreteColor} fillRule="evenodd" stroke="#b9b8ad" strokeWidth=".08"/>
-          {data.tiles.map(t=><path key={t.id} d={pathData(t.polygon)} fill={proposal.settings.concreteColor} fillRule="evenodd" stroke="#b9b8ad" strokeWidth=".06"
-            className={tool==='tile'?'tile-hit':''} onPointerDown={event=>{if(tool==='tile'){event.stopPropagation();onTile(t.id)}}}/>)}
-          {Object.keys(proposal.exceptions).filter(id=>id.startsWith(zone+':')).map(id=>{const [,c,r]=id.split(':').map(Number);const s=proposal.settings,p=s.tile+s.gap;const polygon=mapPoly(rect(c*p,r*p,s.tile,s.tile),q=>{const v=rotate(q,s.angle);return [v[0]+s.gridX,v[1]+s.gridZ]});return <path key={id} d={pathData(polygon)} fill="transparent" stroke="#a4ae90" strokeDasharray=".2 .2" strokeWidth=".1" onPointerDown={e=>{if(tool==='tile'){e.stopPropagation();onTile(id)}}}/>})}
-        </>:<path d={pathData(localSurface.net)} fill={stage==='demolition'?'#d8bcb0':zone==='front'?'#c7a994':'#a28b73'} stroke="#b29a86" strokeWidth=".1" fillRule="evenodd"/>}
-        {es.filter(e=>e.zone===zone||e.kind==='house').map(e=>{
-          if(e.action==='retirar'&&stage==='proposed')return null;
-          if(e.kind==='paving'||e.kind==='path')return <path key={e.id} data-element={e.id} d={pathData(polyFor(e))} fill="transparent" stroke={e.id===selected?'#3a624e':'transparent'} strokeWidth=".2" onPointerDown={ev=>{if(tool!=='tile')start(ev,e)}} style={{pointerEvents:tool==='tile'?'none':'visiblePainted'}}/>;
-          return <g key={e.id} data-element={e.id} onPointerDown={ev=>start(ev,e)} className={e.locked?'locked-element':'editable-element'}>
-            {e.kind==='palm'?<g><circle cx={e.x+e.width/2} cy={e.z+e.depth/2} r="3.5" fill={e.action==='retirar'?'#b77665':'#789166'} fillOpacity=".22"/>{Array.from({length:9},(_,i)=>{const a=i/9*Math.PI*2;const x=e.x+e.width/2,z=e.z+e.depth/2;return <path key={i} d={`M${x},${z}q${Math.cos(a+.3)*2},${Math.sin(a+.3)*2} ${Math.cos(a)*4},${Math.sin(a)*4}`} fill="none" stroke={e.action==='retirar'?'#a36c5c':'#486442'} strokeWidth=".3"/>})}<circle cx={e.x+e.width/2} cy={e.z+e.depth/2} r=".4" fill="#9a8060"/></g>:
-              <path d={pathData(polyFor(e))} fill={e.kind==='pool'?'#8abfc0':e.color} fillRule="evenodd" stroke={e.id===selected?'#315941':e.kind==='garden'?'#718460':'#a59f91'} strokeWidth={e.id===selected?.24:.12}/>}
-            {e.kind==='house'&&<><path d={`M${e.x},${e.z}l9,8h${e.width-18}l9,-8 M${e.x+9},${e.z+8}v${e.depth-16} M${e.x+e.width-9},${e.z+8}v${e.depth-16}`} fill="none" stroke="#b5a694" strokeWidth=".15"/><rect x={e.x+25} y={e.z} width="12" height="4" fill="#cbbba3"/></>}
-            {e.kind==='pool'&&<path d={`M${e.x+.6},${e.z+.6}h${e.width-1.2}v${e.depth-1.2}h-${e.width-1.2}Z`} fill="none" stroke="#bde0da" strokeWidth=".2"/>}
-            {e.kind==='stairs'&&Array.from({length:4},(_,i)=><path key={i} d={`M${e.x},${e.z+i*e.depth/4}h${e.width}`} stroke="#90755e" strokeWidth=".12"/>)}
-          </g>
-        })}
-        {sel&&sb&&stage==='proposed'&&<g pointerEvents="none"><rect x={sb.x-.5} y={sb.z-.5} width={sb.maxX-sb.x+1} height={sb.maxZ-sb.z+1} fill="none" stroke="#315e49" strokeWidth=".18" strokeDasharray=".4 .25"/></g>}
-        {stage==='demolition'&&es.filter(e=>e.zone===zone&&e.kind==='palm').map(e=>{const future=proposal.elements.find(f=>f.id===e.id);const x=e.x+e.width/2,z=e.z+e.depth/2;return future?.action==='retirar'?<path key={e.id} d={`M${x-2},${z-2}l4,4M${x+2},${z-2}l-4,4`} stroke="#b26851" strokeWidth=".35"/>:future?.action==='trasladar'?<g key={e.id} stroke="#ad7157" strokeWidth=".18"><path d={`M${x},${z}L${future.x+future.width/2},${future.z+future.depth/2}`} strokeDasharray=".5 .3"/><circle cx={future.x+future.width/2} cy={future.z+future.depth/2} r="1.2" fill="none"/></g>:null})}
-        {sel&&tool==='vertices'&&!sel.locked&&sel.shape==='polygon'&&sel.points?.map((p,i)=>{const q=rotate([p[0]-sel.width/2,p[1]-sel.depth/2],sel.rotation);return <circle key={i} data-vertex={i} cx={sel.x+sel.width/2+q[0]} cy={sel.z+sel.depth/2+q[1]} r=".45" fill="#fff" stroke="#315e49" strokeWidth=".2" onPointerDown={ev=>start(ev,sel,i)}/>})}
-      </g>
-      {dimensions&&<g fontFamily="Arial,sans-serif" fontSize=".95" fill="#65705d">
-        <text x="37.5" y={zone==='front'?-40:-125} textAnchor="middle" letterSpacing=".2">{zone==='front'?'CASA EXISTENTE':'CANAL · MUELLE CONSERVADO'}</text>
-        {zone==='front'&&<text x="37.5" y="4.5" textAnchor="middle" letterSpacing=".2">KEYSTONE BOULEVARD</text>}
-        {es.filter(e=>e.zone===zone&&['pool','paving','garden','path'].includes(e.kind)&&e.action!=='retirar').map(e=><text key={e.id} x={e.x+e.width/2} y={-(e.z+e.depth/2)} textAnchor="middle" fill="#4b5747" fontSize={e.kind==='path'?.7:.85} pointerEvents="none">{e.kind==='paving'?`${fmt(e.width)}′ × ${fmt(e.depth)}′*`:e.kind==='pool'?`Piscina · ${fmt(e.width)}′ × ${fmt(e.depth)}′*`:e.kind==='path'?`${fmt(e.width)}′*`:''}</text>)}
-        {sel&&sb&&<><path d={`M${sb.x},${-sb.z+2}H${sb.maxX}M${sb.x},${-sb.z+1.4}v1.2M${sb.maxX},${-sb.z+1.4}v1.2`} stroke="#315e49" strokeWidth=".1"/><text x={(sb.x+sb.maxX)/2} y={-sb.z+3.5} textAnchor="middle">{fmt(sb.maxX-sb.x)}′ · {sel.source}</text></>}
-      </g>}
-    </svg>
-    <div className="plan-navigation"><button title="Acercar" onClick={()=>setZoom(z=>Math.min(4,z*1.2))}>+</button><button title="Alejar" onClick={()=>setZoom(z=>Math.max(.6,z/1.2))}>−</button><button title="Centrar plano" onClick={()=>{setZoom(1);setPan([0,0])}}>⌖</button></div>
-    <div className="canvas-scale"><span style={{width:50}}/> 0 ─ 10 ft <small>* Medidas preliminares · marco visual sin linderos verificados</small></div>
-  </div>
+export type Tool='select'|'move'|'vertices'|'tile'|'pan'|'measure'|'draw';
+export interface ViewProps {proposal:Proposal;zone:Zone;stage:Stage;existing:Element[];data:Surface;selected:string|null;onSelect:(id:string|null)=>void;onChange:(id:string,patch:Partial<Element>)=>void;tool:Tool;dimensions:boolean;onTile:(id:string)=>void;onDraw?:(points:Point[],kind:Kind)=>boolean|void}
+export default function PlanView({proposal,zone,stage,existing,data,selected,onSelect,onChange,tool,dimensions,onTile,onDraw}:ViewProps){
+ const svg=useRef<SVGSVGElement>(null),[zoom,setZoom]=useState(1),[pan,setPan]=useState<Point>([0,0]),[aerial,setAerial]=useState(false),[whole,setWhole]=useState(false),[numbers,setNumbers]=useState(false),[measure,setMeasure]=useState<Point[]>([]),[drawing,setDrawing]=useState<Point[]>([]),[drawKind,setDrawKind]=useState<Kind>('paving'),[preview,setPreview]=useState<Element|null>(null),[cursor,setCursor]=useState<Point|null>(null),[canvasSize,setCanvasSize]=useState<[number,number]>([800,500]);
+ useEffect(()=>{const node=svg.current!;const observer=new ResizeObserver(()=>setCanvasSize([node.clientWidth,node.clientHeight]));observer.observe(node);return()=>observer.disconnect()},[]);
+ const drag=useRef<{start:Point;original?:Element;vertex?:number;mode:'move'|'vertex'|'rotate'|'resize'|'pan';pan?:Point;last?:Point;patch?:Partial<Element>}|null>(null);
+ useEffect(()=>{setZoom(1);setPan([0,0]);setMeasure([]);setDrawing([]);setPreview(null)},[zone,proposal.id,whole]);
+ useEffect(()=>{setDrawing([]);setMeasure([])},[tool]);
+ const original=stage==='proposed'?proposal.elements:existing,es=preview?original.map(e=>e.id===preview.id?preview:e):original,f=referenceFrame(proposal);
+ const actual=bounds(original.filter(e=>whole||e.zone===zone&&e.kind!=='house').flatMap(polyFor));const minX=Math.min(-5,actual.x-5),maxX=Math.max(f.width+5,actual.maxX+5),minZ=whole?Math.min(-22,actual.z-5):zone==='front'?Math.min(-21,actual.z-4):Math.min(62,actual.z-5),maxZ=whole?Math.max(f.depth+8,actual.maxZ+5):zone==='front'?Math.max(37,actual.maxZ+5):Math.max(f.depth+8,actual.maxZ+5);
+ const v={x:minX,y:-maxZ,w:maxX-minX,h:maxZ-minZ},bw=v.w/zoom,bh=v.h/zoom,vx=v.x+(v.w-bw)/2+pan[0],vy=v.y+(v.h-bh)/2+pan[1];
+ const point=(event:React.PointerEvent):Point=>{const p=svg.current!.createSVGPoint();p.x=event.clientX;p.y=event.clientY;const q=p.matrixTransform(svg.current!.getScreenCTM()!.inverse());return [q.x,-q.y]};
+ const snapPoint=(p:Point,free=false):Point=>{if(free)return p;const near=original.filter(e=>e.id!==selected).flatMap(e=>ringFor(e)).find(q=>Math.hypot(q[0]-p[0],q[1]-p[1])<.35/zoom);return near??[Math.round(p[0]*12)/12,Math.round(p[1]*12)/12]};
+ const start=(event:React.PointerEvent,e:Element,mode:'move'|'vertex'|'rotate'|'resize'='move',vertex?:number)=>{if(tool==='measure'||tool==='draw'||tool==='pan'||tool==='tile')return;event.stopPropagation();onSelect(e.id);if(stage!=='proposed'||e.locked)return;if(tool==='move'||tool==='vertices'||mode!=='move'){svg.current!.setPointerCapture(event.pointerId);drag.current={start:point(event),original:mode==='vertex'?{...structuredClone(e),shape:'polygon',points:e.points??[[0,0],[e.width,0],[e.width,e.depth],[0,e.depth]]}:structuredClone(e),mode,vertex}}};
+ const move=(event:React.PointerEvent)=>{const raw=point(event),p=snapPoint(raw,event.shiftKey);setCursor(p);const d=drag.current;if(!d)return;d.last=p;if(d.mode==='pan'){const matrix=svg.current!.getScreenCTM()!;const dx=event.movementX/matrix.a,dy=event.movementY/matrix.d;setPan(v=>[v[0]-dx,v[1]-dy]);return}const e=d.original!,dx=p[0]-d.start[0],dz=p[1]-d.start[1];let patch:Partial<Element>={};
+ if(d.mode==='rotate'){const cx=e.x+e.width/2,cz=e.z+e.depth/2;const a=Math.atan2(p[1]-cz,p[0]-cx)-Math.atan2(d.start[1]-cz,d.start[0]-cx);patch={rotation:Math.round((e.rotation+a*180/Math.PI)/(event.shiftKey?1:5))*(event.shiftKey?1:5)}}
+ else if(d.mode==='vertex'&&e.points){const delta=rotate([dx,dz],-e.rotation),points=structuredClone(e.points);points[d.vertex!]=[e.points[d.vertex!][0]+delta[0],e.points[d.vertex!][1]+delta[1]];patch={points,shape:'polygon'}}
+ else if(d.mode==='resize'){const delta=rotate([dx,dz],-e.rotation),width=Math.max(.25,e.width+delta[0]),depth=Math.max(.25,e.depth+delta[1]);patch={width,depth,points:e.points?.map(([x,z])=>[x*width/e.width,z*depth/e.depth])}}
+ else patch={x:Math.round((e.x+dx)*12)/12,z:Math.round((e.z+dz)*12)/12};d.patch=patch;setPreview({...e,...patch});
+ };
+ const end=()=>{const d=drag.current;drag.current=null;setPreview(null);if(d?.patch&&d.original)onChange(d.original.id,d.patch)};
+ const backgroundClick=(event:React.PointerEvent)=>{if(event.button!==0)return;if(tool==='pan'){svg.current!.setPointerCapture(event.pointerId);drag.current={mode:'pan',start:point(event),pan:[...pan]};return}const p=snapPoint(point(event),event.shiftKey);if(tool==='draw'){setDrawing(v=>[...v,p]);return}if(tool==='measure'){setMeasure(v=>v.length===2?[p]:[...v,p]);return}onSelect(null)};
+ const sel=es.find(e=>e.id===selected),ring=sel?ringFor(sel):[],corner=sel?rotate([sel.width/2,sel.depth/2],sel.rotation):[0,0],resizeAt=sel?[sel.x+sel.width/2+corner[0],sel.z+sel.depth/2+corner[1]]:[0,0],dims=sel?edgeDimensions(sel):[];
+ const measureLine=measure.length===1&&cursor?[measure[0],cursor]:measure;
+ const drawLine=drawing.length&&cursor?[...drawing,cursor]:drawing;
+ const a=SITE.angleFromEastDegrees*Math.PI/180,co=Math.cos(a),si=Math.sin(a),ox=SITE.origin2236[0],oy=SITE.origin2236[1],ix=935370,iy=568000;
+ const aerialMatrix=`matrix(${co/5},${si/5},${-si/5},${co/5},${co*(ix-ox)+si*(iy-oy)},${si*(ix-ox)-co*(iy-oy)})`;
+ const textAt=(p:Point,label:string,key?:string,color='#4b6050')=><text key={key} x={p[0]} y={-p[1]} textAnchor="middle" fontSize={1.05/Math.sqrt(zoom)} fill={color} className="plan-label">{label}</text>;
+ const dimension=(a:Point,b:Point,label:string,key:string,offset=1)=>{const length=Math.hypot(b[0]-a[0],b[1]-a[1]);if(length<.75)return null;const dx=-(b[1]-a[1])/length*offset,dz=(b[0]-a[0])/length*offset;return <g key={key} className="dimension"><path d={`M${a[0]},${-a[1]}L${a[0]+dx*1.35},${-a[1]-dz*1.35}M${b[0]},${-b[1]}L${b[0]+dx*1.35},${-b[1]-dz*1.35}M${a[0]+dx},${-a[1]-dz}L${b[0]+dx},${-b[1]-dz}`} fill="none" stroke="#4c6657" strokeWidth={.065/zoom}/>{textAt([(a[0]+b[0])/2+dx*1.8,(a[1]+b[1])/2+dz*1.8],label)}</g>};
+ return <div className={`plan-wrap tool-${tool}`}><svg ref={svg} className="plan-canvas" viewBox={`${vx} ${vy} ${bw} ${bh}`} role="img" aria-label={`Plano editable del ${zone==='front'?'frente':'patio'}`} onPointerMove={move} onPointerUp={end} onPointerCancel={()=>{drag.current=null;setPreview(null)}} onPointerDown={backgroundClick} onWheel={event=>setZoom(z=>Math.max(.45,Math.min(7,z*(event.deltaY<0?1.12:.9))))}>
+ <defs><pattern id="sheet-grid" patternUnits="userSpaceOnUse" width="5" height="5"><path d="M5 0H0V5" fill="none" stroke="#c6c9bc" strokeWidth=".035"/></pattern><pattern id="deck-lines" width=".7" height="2" patternUnits="userSpaceOnUse"><rect width=".7" height="2" fill="#a99074"/><path d="M0 0V2" stroke="#7e6f5c" strokeWidth=".04"/></pattern><pattern id="roof-lines" width="1.5" height="1.5" patternUnits="userSpaceOnUse"><rect width="1.5" height="1.5" fill="#dbd5c6"/><path d="M0 0L1.5 1.5" stroke="#c5bda9" strokeWidth=".05"/></pattern></defs>
+ <rect x={vx} y={vy} width={bw} height={bh} fill="#f4f3ec"/><rect x={vx} y={vy} width={bw} height={bh} fill="url(#sheet-grid)"/>
+ <g transform="scale(1,-1)" opacity={aerial?.35:1}><path d={pathData([[f.parcel]])} fill="#c9d1b7" stroke="#809074" strokeWidth=".12"/><rect x="-80" y={f.street-7} width="240" height="14" fill="#d0d2cb"/><rect x="-80" y={f.sidewalk} width="240" height="3.5" fill="#e2e1d7"/><rect x="-80" y={f.shore+1} width="240" height="50" fill="#b5d1ce"/></g>
+ {aerial&&proposal.referenceEdition&&<image href="/references/ortofoto-oficial.png" width="700" height="1000" transform={aerialMatrix} opacity=".86"/>}
+ <g transform="scale(1,-1)"><path d={pathData([[f.parcel]])} fill="none" stroke="#697c66" strokeWidth=".12" strokeDasharray=".6 .4"/>
+ {stage==='proposed'?<><path d={pathData(data.grass)} fill={proposal.settings.turf==='natural'?'#96a774':'#7c965a'} fillRule="evenodd" opacity={aerial?.85:1}/><path d={pathData(data.paths)} fill={proposal.settings.concreteColor} fillRule="evenodd" stroke="#9d9c8f" strokeWidth=".08"/>{proposal.settings.method==='prefabricado'&&data.pathTiles.map(t=><path key={t.id} d={pathData(t.polygon)} fill={proposal.settings.concreteColor} stroke="#a4a596" strokeWidth=".055"/>)}{data.tiles.map(t=><path key={t.id} d={pathData(t.polygon)} fill={proposal.settings.concreteColor} fillRule="evenodd" stroke="#a4a596" strokeWidth=".055" onPointerDown={event=>{if(tool==='tile'){event.stopPropagation();onTile(t.id)}}}/>)}{Object.keys(proposal.exceptions).filter(id=>id.startsWith(zone+':')).map(id=>{const [,c,r]=id.split(':').map(Number),s=proposal.settings,p=s.tile+s.gap;const polygon=mapPoly(rect(c*p,r*p,s.tile,s.tile),q=>{const v=rotate(q,s.angle);return [v[0]+s.gridX,v[1]+s.gridZ]});return <path key={id} d={pathData(polygon)} fill="transparent" stroke="#acbc8f" strokeDasharray=".2 .2" strokeWidth=".08" onPointerDown={e=>{if(tool==='tile'){e.stopPropagation();onTile(id)}}}/>})}</>:<path d={pathData(stage==='demolition'?demolitionFor(es,proposal.elements,zone):footprint(es,zone).net)} fill={stage==='demolition'?'#d6ad97':'url(#deck-lines)'} stroke="#a18e76" strokeWidth=".1" fillRule="evenodd"/>}
+ {es.filter(e=>whole||e.zone===zone||e.kind==='house'||e.kind==='fixed').map(e=>{if(e.action==='retirar'&&stage==='proposed')return null;const selected=e.id===sel?.id;
+ if(['paving','path'].includes(e.kind))return <path key={e.id} data-element={e.id} d={pathData(polyFor(e))} fill={e.action==='conservar'&&stage==='proposed'?'url(#deck-lines)':'transparent'} stroke={selected?'#b57738':'transparent'} strokeWidth=".2" onPointerDown={ev=>start(ev,e)} style={{pointerEvents:['draw','measure','tile','pan'].includes(tool)?'none':'visiblePainted'}}/>;
+ return <g key={e.id} onPointerDown={ev=>start(ev,e)} style={{pointerEvents:['draw','measure','pan'].includes(tool)?'none':'auto'}}>
+ {e.kind==='palm'?<g><circle cx={e.x+e.width/2} cy={e.z+e.depth/2} r="4" fill="#738957" opacity=".2"/>{e.id!=='palm-remove'&&Array.from({length:10},(_,i)=>{const a=i*Math.PI/5,x=e.x+e.width/2,z=e.z+e.depth/2;return <path key={i} d={`M${x},${z}Q${x+Math.cos(a+.2)*2},${z+Math.sin(a+.2)*2} ${x+Math.cos(a)*4.2},${z+Math.sin(a)*4.2}`} stroke="#647f49" strokeWidth=".28" fill="none"/>})}<circle cx={e.x+e.width/2} cy={e.z+e.depth/2} r=".35" fill="#8e795b"/>{stage==='demolition'&&proposal.elements.find(x=>x.id===e.id)?.action==='retirar'&&<path d={`M${e.x-1},${e.z-1}l4,4m0,-4l-4,4`} stroke="#b7613f" strokeWidth=".25"/>}</g>:<path d={pathData(visibleFootprint(e,es))} fillOpacity={aerial&&e.kind==='house'?.65:1} fill={e.kind==='house'?'url(#roof-lines)':e.kind==='pool'?'#8fbdc1':e.kind==='garden'?'#9aa47a':e.kind==='dock'?'url(#deck-lines)':e.kind==='fixed'?'#e4e2d7':e.color} stroke={selected?'#b57738':e.kind==='house'?'#928c7b':'#929e85'} strokeWidth={selected?.2:.1} fillRule="evenodd"/>}
+ {e.kind==='pool'&&<path d={pathData(polyFor({...e,x:e.x+.6,z:e.z+.6,width:e.width-1.2,depth:e.depth-1.2}))} fill="none" stroke="#d6e3de" strokeWidth=".2"/>}
+ </g>})}
+ {sel&&stage==='proposed'&&!sel.locked&&tool!=='draw'&&tool!=='measure'&&<g>
+ <path d={pathData(polyFor(sel))} fill="none" stroke="#b57738" strokeWidth=".16" strokeDasharray=".4 .2" pointerEvents="none"/>
+ {tool==='vertices'&&sel.shape!=='ellipse'&&ring.slice(0,-1).map((p,i)=><circle key={i} cx={p[0]} cy={p[1]} r={.35/Math.sqrt(zoom)} fill="#fffaf1" stroke="#aa713d" strokeWidth=".15" onPointerDown={ev=>start(ev,sel,'vertex',i)}/>)}
+ {tool!=='vertices'&&<><circle cx={sel.x+sel.width/2} cy={sel.z-3} r={.6/Math.sqrt(zoom)} fill="#bd8048" stroke="white" strokeWidth=".12" onPointerDown={ev=>start(ev,sel,'rotate')}/><rect x={resizeAt[0]-.4} y={resizeAt[1]-.4} width=".8" height=".8" fill="#fffaf1" stroke="#aa713d" strokeWidth=".14" onPointerDown={ev=>start(ev,sel,'resize')}/></>}
+ </g>}
+ </g>
+ {dimensions&&<>{sel?dims.filter(d=>d.length>1).map((d,i)=>dimension(d.a,d.b,feetLabel(d.length),`d${i}`,1)):dimension([0,0],[f.width,0],`${feetLabel(f.width)} · ${proposal.referenceEdition?'GIS':'estimado'}`,'front',-2)}{es.filter(e=>e.kind==='pool'&&(zone==='back'||whole)).map(e=>dimension([e.x,e.z],[e.x,e.z+e.depth],`${feetLabel(e.depth)} · estimado`,e.id,2))}</>}
+ {es.filter(e=>(whole||e.zone===zone||e.kind==='house')&&['house','pool','dock','stairs'].includes(e.kind)).map(e=>textAt([e.x+e.width/2,e.z+e.depth/2],e.kind==='house'?'CASA · CONSERVAR':e.kind==='pool'?'PISCINA · CONSERVAR':e.kind==='dock'?'MUELLE':'ESCALONES',e.id))}
+ {numbers&&[...data.tiles,...data.pathTiles].map((t,i)=>{const b=bounds(t.polygon);return textAt([(b.x+b.maxX)/2,(b.z+b.maxZ)/2],`${zone==='front'?'F':'P'}${i+1}`,t.id,'#8c8d7d')})}
+ {measureLine.length===2&&<>{dimension(measureLine[0],measureLine[1],feetLabel(Math.hypot(measureLine[1][0]-measureLine[0][0],measureLine[1][1]-measureLine[0][1])),'measure',1)}<path d={`M${measureLine[0][0]},${-measureLine[0][1]}L${measureLine[1][0]},${-measureLine[1][1]}`} stroke="#ad6a36" strokeWidth=".12" strokeDasharray=".4 .2"/></>}
+ {drawLine.length>0&&<path d={`M${drawLine.map(([x,z])=>`${x},${-z}`).join('L')}`} fill={drawLine.length>2?'#c5bca844':'none'} stroke="#aa713d" strokeWidth=".15" strokeDasharray=".4 .15"/>}
+ </svg>
+ <div className="plan-controls"><button onClick={()=>{setZoom(1);setPan([0,0])}}>Ajustar</button><button onClick={()=>setZoom(v=>Math.min(7,v*1.25))}>+</button><button onClick={()=>setZoom(v=>Math.max(.45,v/1.25))}>−</button><button className={whole?'active':''} onClick={()=>setWhole(v=>!v)}>Todo el terreno</button>{proposal.referenceEdition&&<button className={aerial?'active':''} onClick={()=>setAerial(v=>!v)}>Ortofoto</button>}<button className={numbers?'active':''} onClick={()=>setNumbers(v=>!v)}>Numerar piezas</button></div>
+ {tool==='draw'&&<div className="drawing-controls"><select aria-label="Tipo de contorno nuevo" value={drawKind} onChange={e=>setDrawKind(e.target.value as Kind)}><option value="paving">Pavimento</option><option value="garden">Jardinera</option><option value="path">Camino</option></select><span>{drawing.length} puntos</span><button disabled={drawing.length<3} onClick={()=>{if(onDraw?.(drawing,drawKind)!==false)setDrawing([])}}>Cerrar contorno</button><button onClick={()=>setDrawing(v=>v.slice(0,-1))}>Quitar punto</button></div>}
+ <div className="plan-compass">↑ N<small>{proposal.referenceEdition?'Referencia GIS':'Orientación estimada'}</small></div><div className="plan-readout">{tool==='measure'?'Marca dos puntos para medir':tool==='draw'?'Marca los vértices y cierra el contorno':tool==='vertices'?'Arrastra los puntos · Doble clic no añade vértices':'Ajuste a 1″ · Mayús: libre'}{cursor&&<span>X {cursor[0].toFixed(2)}′ · Y {cursor[1].toFixed(2)}′</span>}</div>
+ <div className="plan-scale"><span style={{display:'block',width:10*Math.min(canvasSize[0]/bw,canvasSize[1]/bh),borderBottom:'2px solid #697c63',height:4,marginBottom:4}}/>0 ─ 10 ft · estudio</div>
+ </div>
 }
