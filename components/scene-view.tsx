@@ -66,10 +66,13 @@ export default function SceneView(props:ViewProps){
       if(e.kind==='house'){
         obj.add(box(e.x,0,e.z,e.width,13,e.depth,e.color));obj.add(box(e.x+16,13,e.z+8,30,13,e.depth-8,'#dfd4c1'));
         const roof=(x:number,y:number,z:number,w:number,d:number)=>{
-          const g=new THREE.BufferGeometry();const ridge=Math.min(w*.3,d*.4),verts=[x,y,z,x+w,y,z,x+w,y,z+d,x,y,z+d,x+ridge,y+5,z+d/2,x+w-ridge,y+5,z+d/2];g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setIndex([0,4,1,1,4,5,1,5,2,2,5,3,3,5,4,3,4,0]);g.computeVertexNormals();const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:'#a76e50',roughness:1,side:THREE.DoubleSide}));m.castShadow=true;obj.add(m);
+          const g=new THREE.BufferGeometry();const ridge=Math.min(w*.3,d*.4),verts=[x,y,z,x+w,y,z,x+w,y,z+d,x,y,z+d,x+ridge,y+5,z+d/2,x+w-ridge,y+5,z+d/2];g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setIndex([0,4,1,1,4,5,1,5,2,2,5,3,3,5,4,3,4,0]);g.computeVertexNormals();const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:'#a76e50',roughness:1,flatShading:true,side:THREE.DoubleSide}));m.castShadow=true;obj.add(m);
         };roof(e.x-1,13.1,e.z-1,e.width+2,e.depth+2);roof(e.x+15,26.1,e.z+7,32,e.depth-6);
         for(const x of [e.x+10,e.x+44]){obj.add(box(x,3,e.z-.12,10,7,.2,'#607e7a'));for(let n=0;n<4;n++)obj.add(box(x+n*2.5,3,e.z-.26,.16,7,.2,'#f1ecdf'));obj.add(box(x,6,e.z-.26,10,.16,.2,'#f1ecdf'))}
         obj.add(box(e.x+28,0,e.z-.14,4,10,.25,'#5c574a'));
+        const arch=new THREE.Shape();arch.moveTo(0,0);arch.lineTo(10,0);arch.lineTo(10,4);arch.absarc(5,4,5,0,Math.PI,false);arch.lineTo(0,0);
+        const windowMesh=new THREE.Mesh(new THREE.ShapeGeometry(arch),new THREE.MeshStandardMaterial({color:'#6c8d87',roughness:.3,side:THREE.DoubleSide}));windowMesh.position.set(e.x+18,16,e.z+7.85);obj.add(windowMesh);
+        const frame=new THREE.Line(new THREE.BufferGeometry().setFromPoints(arch.getPoints(40).map(v=>new THREE.Vector3(v.x+e.x+18,v.y+16,e.z+7.75))),new THREE.LineBasicMaterial({color:'#eeeade'}));obj.add(frame);obj.add(box(e.x+22.9,16,e.z+7.7,.18,8.8,.1,'#eeeade'));obj.add(box(e.x+18,20,e.z+7.7,10,.18,.1,'#eeeade'));
         obj.add(box(e.x-2,9,e.z-8,17,1,14,'#79654d'));obj.add(box(e.x+e.width-15,9,e.z-7,17,1,12,'#79654d'));
         for(const x of [e.x-1,e.x+e.width+1])obj.add(box(x,0,e.z-7,.6,9,.6,'#79654d'));
         obj.scale.y=e.height/26;obj.position.y=e.elevation;
