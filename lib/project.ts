@@ -1,5 +1,5 @@
 import { validRing } from './engineering';
-import { withReferenceEdition } from './site-reference';
+import { withReferenceEdition, withFrontCalibration } from './site-reference';
 export type Point = [number, number];
 export type Zone = 'front' | 'back';
 export type Kind = 'paving' | 'garden' | 'path' | 'pool' | 'house' | 'palm' | 'furniture' | 'dock' | 'stairs' | 'fixed';
@@ -8,7 +8,7 @@ export interface Element {
   id: string; name: string; zone: Zone; kind: Kind; x: number; z: number;
   width: number; depth: number; rotation: number; elevation: number; height: number;
   groundElevation?: number; slopeX?: number; slopeZ?: number; style?: string;
-  shape: 'rect' | 'ellipse' | 'polygon'; points?: Point[]; color: string;
+  shape: 'rect' | 'ellipse' | 'polygon'; points?: Point[]; edgeSources?:Record<string,Source>; color: string;
   locked: boolean; action: 'conservar' | 'retirar' | 'nuevo' | 'trasladar';
   source: Source; note: string; support: 'terreno' | 'elevado' | 'por verificar';
 }
@@ -23,9 +23,9 @@ export interface Settings {
 }
 export interface Rate { value: number | null; source: string; date: string; url?: string }
 export interface Measure { id: string; label: string; value: string; source: Source; note: string }
-export interface Proposal { referenceEdition?: 2; baseline?: Element[]; id: string; name: string; description: string; elements: Element[]; settings: Settings; exceptions: Record<string, 'turf' | 'concrete'> }
+export interface Proposal { frontCalibration?:3; referenceEdition?: 2; baseline?: Element[]; id: string; name: string; description: string; elements: Element[]; settings: Settings; exceptions: Record<string, 'turf' | 'concrete'> }
 export interface Project {
-  referenceEdition?: 2; schemaVersion: 1; title: string; address: string; activeId: string; proposals: Proposal[];
+  frontCalibration?:3; referenceEdition?: 2; schemaVersion: 1; title: string; address: string; activeId: string; proposals: Proposal[];
   existing: Element[];
   rates: Record<string, Rate>; measures: Measure[]; checklist: Record<string, boolean>; updatedAt: string;
 }
@@ -102,8 +102,8 @@ export function createLegacyProject(): Project {
       {id:'m10',label:'Límites de propiedad',value:'Pendiente de survey',source:'Estimada',note:'El marco del modelo es visual; no define linderos legales.'},
     ],checklist:{},updatedAt:new Date().toISOString()};
 }
-export function createProject():Project{return withReferenceEdition(createLegacyProject(),false)}
-export const upgradeProject=(p:Project)=>withReferenceEdition(p,true);
+export function createProject():Project{return withFrontCalibration(withReferenceEdition(createLegacyProject(),false),false)}
+export const upgradeProject=(p:Project)=>withFrontCalibration(withReferenceEdition(p,true),true);
 export const baselineFor=(p:Project,v:Proposal)=>v.baseline??p.existing;
 export const activeProposal=(p:Project)=>p.proposals.find(x=>x.id===p.activeId)??p.proposals[0];
 export const fmt=(n:number,d=1)=>new Intl.NumberFormat('es-US',{maximumFractionDigits:d}).format(n);

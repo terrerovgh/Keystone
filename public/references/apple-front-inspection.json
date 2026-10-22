@@ -1,0 +1,43 @@
+{
+  "consulted": "2026-10-22",
+  "captureDate": null,
+  "scope": "Recorrido entre ambos extremos del frente; vistas frontales de los accesos y central, y oblicuas desde los dos lados. Fotografías para forma y proporción; sin medición topográfica.",
+  "views": [
+    {
+      "file": "apple-frente-central.png",
+      "label": "Frente central y acceso derecho",
+      "url": "https://maps.apple.com/look-around?address=2303-2399+Keystone+Blvd%2C+North+Miami%2C+FL++33181%2C+United+States&coordinate=25.893278%2C-80.150486&name=2303%E2%80%932399+Keystone+Blvd&_mvs=Ci0J86fhZK3kOUARwjPejKEJVMAZAACUdgfoN8AhAMiGUTUf2j8pDDD9ELAGD0A%3D",
+      "observed": "2026-10-22"
+    },
+    {
+      "file": "apple-acceso-izquierdo.png",
+      "label": "Frente del acceso izquierdo",
+      "url": "https://maps.apple.com/look-around?address=2303-2399+Keystone+Blvd%2C+North+Miami%2C+FL++33181%2C+United+States&coordinate=25.893273%2C-80.150584&name=2303%E2%80%932399+Keystone+Blvd&_mvs=Ci0JTMcnKK3kOUAR4KOgKaMJVMAZAACUdgfoN8AhADhbe6NG7T8pDDD9ELAGD0A%3D",
+      "observed": "2026-10-22"
+    },
+    {
+      "file": "apple-frente-izquierda-oblicua.png",
+      "label": "Oblicua desde el acceso izquierdo",
+      "url": "https://maps.apple.com/look-around?address=2303-2399+Keystone+Blvd%2C+North+Miami%2C+FL++33181%2C+United+States&coordinate=25.893273%2C-80.150584&name=2303%E2%80%932399+Keystone+Blvd&_mvs=Ci0JTMcnKK3kOUAR4KOgKaMJVMAZAACUdgfoN8Ah8FE5H84rPkApDDD9ELAGD0A%3D",
+      "observed": "2026-10-22"
+    },
+    {
+      "file": "apple-frente-extremo-izquierdo.png",
+      "label": "Extremo izquierdo y volumen lateral",
+      "url": "https://maps.apple.com/look-around?address=2303-2399+Keystone+Blvd%2C+North+Miami%2C+FL++33181%2C+United+States&coordinate=25.893271%2C-80.150634&name=2303%E2%80%932399+Keystone+Blvd&_mvs=Ci0J%2FM1CB63kOUARAOp3%2BqMJVMAZAACUdgfoN8AhWHVNYHb%2BQEApDDD9ELAGD0A%3D",
+      "observed": "2026-10-22"
+    },
+    {
+      "file": "apple-frente-extremo-derecho.png",
+      "label": "Extremo derecho, cochera y paso lateral",
+      "url": "https://maps.apple.com/look-around?address=2303-2399+Keystone+Blvd%2C+North+Miami%2C+FL++33181%2C+United+States&coordinate=25.893282%2C-80.150389&name=2303%E2%80%932399+Keystone+Blvd&_mvs=Ci0JC3rKsK3kOUARhNRv9p8JVMAZAACUdgfoN8AhCyIG%2BuFSdEApDDD9ELAGD0A%3D",
+      "observed": "2026-10-22"
+    },
+    {
+      "file": "apple-frente-derecha-lateral.png",
+      "label": "Vista lateral derecha desde el siguiente punto de la calle",
+      "url": "https://maps.apple.com/look-around?address=2303-2399+Keystone+Blvd%2C+North+Miami%2C+FL++33181%2C+United+States&coordinate=25.893284%2C-80.150342&name=2303%E2%80%932399+Keystone+Blvd&_mvs=Ci0JK3Ov0a3kOUARP8xAMp8JVMAZAACUdgfoN8AhdfKfvuN6c0ApDDD9ELAGD0A%3D",
+      "observed": "2026-10-22"
+    }
+  ]
+}

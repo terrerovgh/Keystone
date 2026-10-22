@@ -40,3 +40,9 @@ Para una vista local con D1, construir y aplicar la migración a `.wrangler/stat
 `tests/precision.test.ts` añade comprobaciones de migración sin pérdida, exclusiones entre zonas, cotas, niveles, compra por rollo/palé y despiece de caminos. `tests/calculations.test.ts` comprueba geometría, exclusiones, recortes, cantidades, tarifas, variantes, copias y duraciones. `scripts/test-api.ts` comprueba la API contra una vista local de la compilación en 127.0.0.1:8787, con identidades de prueba y sin modificar producción. `scripts/export-example.ts` genera el expediente inicial en `../output/`.
 
 No se incluyen credenciales en el código. Los accesos a la API requieren identidad y filtran por propietario; las escrituras usan revisión para detectar conflictos.
+
+## Revisión del frente con Apple Look Around
+
+La edición de frente 3 incorpora las medidas escritas del croquis: 37 ft de lado izquierdo, 14 ft 4 in de ancho, bocas de 12 × 10 ft, jardinera propuesta de 25 ft y paso lateral de 4 ft 8 in × 35 ft. Conserva las alternativas previas y su estado actual de referencia. El patio editado de la alternativa de referencia se mantiene en las nuevas propuestas.
+
+Los abanicos curvos, el ancho de acera, las ubicaciones y los detalles de fachada siguen estimados. Los 25 ft 7 in y 14 ft del retorno derecho no se fuerzan sobre un tramo no identificado. Las cotas muestran C (croquis), G (GIS), E (estimada) o V (comprobada). Editar dimensiones o vértices invalida las marcas de origen del contorno modificado. Las fotografías permiten interpretar dos gables frontales, el volumen superior del lado derecho, la torre de entrada y la profundidad distinta de las cocheras. No se presentan como medición topográfica.

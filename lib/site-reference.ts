@@ -1,7 +1,7 @@
 import geo from '../public/references/site-geometry.json';
 import type { Element, Point, Project, Proposal } from './project';
 export const SITE={...geo,parcel:geo.parcelLocal as Point[],building:geo.buildingLocal as Point[],date:'2026-10-22',parcelUrl:'https://gisweb.miamidade.gov/arcgis/rest/services/MD_NSPApp/MapServer/1',buildingUrl:'https://services.arcgis.com/8Pc9XBTAsYuxx9Ny/ArcGIS/rest/services/BuildingFootprint2D_gdb/FeatureServer/0',aerialUrl:'https://gisweb.miamidade.gov/arcgis/rest/services/MapCache/MDCImagery/MapServer',appleUrl:'https://maps.apple.com/?address=2331+Keystone+Blvd,+North+Miami,+FL+33181&ll=25.893525,-80.150526&q=2331+Keystone+Blvd',mapsUrl:'https://www.google.com/maps/search/?api=1&query=2331+Keystone+Blvd+North+Miami+FL',streetUrl:'https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=25.89330,-80.15052&heading=292&pitch=0',lotListingArea:9375};
-export function referenceFrame(proposal:Proposal){return proposal.referenceEdition===2?{width:82.444,depth:117.424,street:-16,sidewalk:-7,shore:116,parcel:SITE.parcel}:{width:75,depth:125,street:-2,sidewalk:5,shore:125,parcel:[[0,0],[75,0],[75,125],[0,125],[0,0]] as Point[]}}
+export function referenceFrame(proposal:Proposal){return proposal.referenceEdition===2?{width:82.444,depth:117.424,street:proposal.frontCalibration===3?-28.7:-16,sidewalk:proposal.frontCalibration===3?-11.7:-7,shore:116,parcel:SITE.parcel}:{width:75,depth:125,street:-2,sidewalk:5,shore:125,parcel:[[0,0],[75,0],[75,125],[0,125],[0,0]] as Point[]}}
 function element(id:string,name:string,kind:Element['kind'],zone:Element['zone'],x:number,z:number,width:number,depth:number,extra:Partial<Element>={}):Element{return {id,name,kind,zone,x,z,width,depth,height:kind==='palm'?24:.15,elevation:0,rotation:0,shape:'rect',color:'#8c9c74',locked:false,action:'nuevo',source:'Estimada',support:'terreno',note:'Posición de estudio trazada sobre ortofoto; medir en sitio.',...extra}}
 function contour(id:string,name:string,kind:Element['kind'],zone:Element['zone'],world:Point[],extra:Partial<Element>={}):Element{const x=Math.min(...world.map(p=>p[0])),z=Math.min(...world.map(p=>p[1])),width=Math.max(...world.map(p=>p[0]))-x,depth=Math.max(...world.map(p=>p[1]))-z;return element(id,name,kind,zone,x,z,width,depth,{shape:'polygon',points:world.map(p=>[p[0]-x,p[1]-z]),...extra})}
 export function referenceElements():Element[]{
@@ -54,3 +54,50 @@ export function withReferenceEdition(original:Project,keepPrevious=true):Project
 }
 export function feetLabel(n:number){const total=Math.round(Math.abs(n)*12);return `${n<0?'−':''}${Math.floor(total/12)}′ ${total%12}″`}
 export const siteToPixel=(x:number,z:number):Point=>{const a=SITE.angleFromEastDegrees*Math.PI/180,c=Math.cos(a),s=Math.sin(a),e=SITE.origin2236[0]+x*c-z*s,n=SITE.origin2236[1]+x*s+z*c;return [(e-935370)*5,(568000-n)*5]};
+
+export const FRONT_CONTROLS=[
+ {label:'Tramo izquierdo',value:'37′',source:'Croquis',use:'Lado entre el fondo del acceso izquierdo y el borde junto a la acera. Extremos de campo pendientes.'},
+ {label:'Ancho del tramo izquierdo',value:'14′ 4″',source:'Croquis',use:'Ancho del entrante izquierdo, coherente aproximadamente con la huella GIS.'},
+ {label:'Bocas de entrada',value:'12′ × 10′',source:'Croquis',use:'12′ de garganta y 10′ de profundidad hacia calle. El abanico y los radios siguen estimados.'},
+ {label:'Jardinera propuesta',value:'25′',source:'Croquis',use:'Ancho total de la nueva composición, antes de descontar el camino.'},
+ {label:'Paso lateral derecho',value:'4′ 8″ × 35′',source:'Croquis',use:'Franja lateral incorporada al alcance; posición inicial junto al ala derecha por confirmar.'},
+ {label:'Acera y distancia a calle',value:'3.5′ / ubicación aproximada',source:'Estimada',use:'La acera se conserva. Se alinea provisionalmente con la ortofoto y la profundidad del croquis.'},
+ {label:'Retornos del lado derecho',value:'25′ 7″ / 14′',source:'Croquis',use:'Lecturas conservadas, sin asignar a un tramo definitivo hasta cerrar sus extremos en sitio.'},
+ {label:'Alturas y ventanas',value:'Sin medición de campo',source:'Estimada',use:'Los ángulos de Apple aclaran forma y proporción, pero no certifican alturas ni anchos.'},
+];
+function frontageBaseline(base:Element[]){
+ const front=referenceElements().filter(e=>e.zone==='front'&&!['front-floor','entry-left','entry-right','sidewalk','old-center','side-garden-right'].includes(e.id));
+ const y=-8.2,side=-11.7,curb=-21.7;
+ front.forEach(e=>{if(e.kind==='palm')e.z-=7;if(e.id==='side-garden-left'){e.z=y;e.depth=37}});
+ const flare=(id:string,name:string,center:number)=>{const l=center-6,r=center+6,left=center-11,right=center+11;
+ const q=(a:Point,b:Point,c:Point)=>Array.from({length:9},(_,i)=>{const t=i/8;return [(1-t)**2*a[0]+2*(1-t)*t*b[0]+t*t*c[0],(1-t)**2*a[1]+2*(1-t)*t*b[1]+t*t*c[1]] as Point});
+ return contour(id,name,'paving','front',[[l,y],[r,y],[r,side],...q([r,side],[r,curb+1.5],[right,curb]).slice(1),[left,curb],...q([left,curb],[l,curb+1.5],[l,side]).slice(1)],{action:'conservar',source:'Croquis',edgeSources:{'0':'Croquis'},note:'Garganta de 12 ft y profundidad hacia calle de 10 ft del croquis. Abanico curvo estimado; cierre, radios y conexión pública pendientes.'})};
+ front.push(
+ contour('front-floor','Entrada y medialuna · control 37 ft','paving','front',[[9.33,y],[76,y],[76,14.6],[56.4,14.6],[56.4,22.1],[49.8,22.1],[49.8,17.7],[23.663333333,17.8],[23.663333333,28.8],[9.33,28.8]],{action:'conservar',source:'Estimada',edgeSources:{'8':'Croquis','9':'Croquis'},note:'Contorno mixto: lado izquierdo 37 ft y ancho superior 14 ft 4 in del croquis. Entrantes restantes referenciados a huella GIS/ortofoto, sin cierre de campo.'}),
+ flare('entry-left','Acceso izquierdo · 12 × 10 ft',16.5),flare('entry-right','Acceso derecho · 12 × 10 ft',69),
+ element('sidewalk','Acera pública conservada','fixed','front',-5,side,95,3.5,{action:'conservar',locked:true,color:'#cbc9be',note:'Ancho y posición estimados sobre ortofoto. No modificar sin comprobar linderos, cotas y requisitos públicos.'}),
+ contour('old-center','Jardinera central existente · aproximada','garden','front',[[27,y],[57,y],...Array.from({length:31},(_,i)=>{const x=57-i;return [x,y+11*Math.sqrt(Math.max(0,1-((x-42)/15)**2))] as Point})],{action:'conservar',note:'Jardinera existente estimada en ortofoto; no confundir su ancho aproximado con los 25 ft de la propuesta del croquis.'}),
+ contour('side-garden-right','Jardinera lateral derecha','garden','front',[[76,y],[80,y],[80,49.6],[79,49.6],[79,14.6],[76,14.6]],{action:'conservar'}),
+ element('right-side-strip','Paso lateral derecho · 4 ft 8 in × 35 ft','paving','front',74,14.6,4+8/12,35,{action:'conservar',source:'Croquis',note:'Dimensiones leídas en el croquis. Ubicación aproximada junto al ala derecha; comprobar extremos y ancho libre antes de ejecutar.'}),
+ element('front-steps','Escalones de entrada · conservar','stairs','front',50.2,18.9,5.8,3.2,{locked:true,action:'conservar',height:1.25,color:'#c5b59b',note:'Escalones observados en Apple Look Around. Dimensiones y altura estimadas, pendientes de medición.'}),
+ );
+ return [...front,...structuredClone(base.filter(e=>e.zone==='back'))];
+}
+export function withFrontCalibration(original:Project,keepPrevious=true):Project{
+ if(original.frontCalibration===3)return original;
+ const p=structuredClone(original),active=p.proposals.find(v=>v.id===p.activeId),reference=active?.referenceEdition===2?active:p.proposals.find(v=>v.referenceEdition===2)??p.proposals[0],baseline=frontageBaseline(reference.baseline??p.existing);
+ const front=structuredClone(baseline.filter(e=>e.zone==='front'&&e.id!=='old-center'));
+ front.forEach(e=>{if(e.kind==='paving')e.action='nuevo';if(e.id==='palm-remove')e.action='retirar';if(e.id==='palm-left'){e.x=30.5;e.z=-6.5;e.action='trasladar'}if(e.id==='palm-right'){e.x=51.5;e.z=-6.5;e.action='trasladar'}});
+ const y=-8.2,arc=(x:number)=>y+9.5*Math.sqrt(Math.max(0,1-((x-42)/12.5)**2));
+ front.push(contour('central-path','Camino entre palmas hacia la puerta','path','front',[[40,y],[44,y],[54.9,22.1],[50.5,22.1]],{note:'Ancho inicial propuesto de 4 ft, ajustable. Llegada descontada contra escalones conservados. No es una medida de campo.',color:reference.settings.concreteColor}),
+ contour('garden-left','Jardinera central · izquierda','garden','front',[[29.5,y],[44,y],...Array.from({length:22},(_,i)=>{const x=44-i*14.5/21;return [x,arc(x)] as Point})],{note:'Extremo izquierdo de la composición de 25 ft del croquis. Profundidad y curva de diseño estimadas.'}),
+ contour('garden-right','Jardinera central · derecha','garden','front',[[44,y],[54.5,y],...Array.from({length:18},(_,i)=>{const x=54.5-i*10.5/17;return [x,arc(x)] as Point})],{note:'Extremo derecho de la composición de 25 ft del croquis. El camino se descuenta automáticamente.'}));
+ const curved=[...front,...structuredClone(reference.elements.filter(e=>e.zone==='back'))],straight=structuredClone(curved);
+ straight.filter(e=>['garden-left','garden-right'].includes(e.id)).forEach(e=>{e.shape='rect';delete e.points;e.x=e.id==='garden-left'?29.5:45.5;e.z=y;e.width=e.id==='garden-left'?11:9;e.depth=8});
+ const offset=keepPrevious?p.proposals.length:0,settings=structuredClone(reference.settings);
+ const variants:Proposal[]=[{id:'front-calibrated-curves-v3',referenceEdition:2,frontCalibration:3,baseline:structuredClone(baseline),name:`${String(offset+1).padStart(2,'0')} · Frente revisado · Curvas`,description:'Croquis como control de medidas; frente revisado desde ambos accesos en Apple Look Around.',elements:curved,settings:{...settings},exceptions:{}},{id:'front-calibrated-lines-v3',referenceEdition:2,frontCalibration:3,baseline:structuredClone(baseline),name:`${String(offset+2).padStart(2,'0')} · Frente revisado · Rectas`,description:'La misma base dimensional del frente con jardineras rectas y camino entre palmas.',elements:straight,settings:{...settings},exceptions:{}}];
+ if(keepPrevious){p.proposals.forEach(v=>v.baseline??=structuredClone(p.existing));p.proposals.push(...variants)}else p.proposals=variants;
+ p.existing=baseline;p.activeId=variants[0].id;p.frontCalibration=3;p.updatedAt=new Date().toISOString();
+ p.measures.push(...FRONT_CONTROLS.map((m,i)=>({id:`front-control-${i}`,label:m.label,value:m.value,source:m.source as Element['source'],note:m.use})));
+ return p;
+}

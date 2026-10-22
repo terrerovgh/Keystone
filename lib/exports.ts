@@ -1,5 +1,5 @@
 import { edgeDimensions } from './engineering';
-import { feetLabel, referenceFrame, SITE } from './site-reference';
+import { FRONT_CONTROLS, feetLabel, referenceFrame, SITE } from './site-reference';
 import { jsPDF } from 'jspdf';
 import { area, demolitionFor, bounds, footprint, intersection, pathData, polyFor, rect, union, visibleFootprint, type MultiPolygon } from './geometry';
 import { calculate, stages } from './calculations';
@@ -69,7 +69,7 @@ export function buildPdf(project:Project,proposal:Proposal):jsPDF {
     }else{
       const occupied:{x:number;y:number;w:number;h:number}[]=[],seen=new Set<string>();
       const dims=es.filter(e=>e.zone===zone&&['paving','pool','path'].includes(e.kind));
-      dims.forEach(e=>edgeDimensions(e).filter(d=>d.length>4).forEach(d=>{const key=[d.a,d.b].map(p=>p.map(n=>n.toFixed(2)).join(',')).sort().join('|');if(seen.has(key))return;seen.add(key);const aa=pt(...d.a),bb=pt(...d.b),len=Math.hypot(bb[0]-aa[0],bb[1]-aa[1]),dx=-(bb[1]-aa[1])/len,dz=(bb[0]-aa[0])/len,mid=[(aa[0]+bb[0])/2,(aa[1]+bb[1])/2];doc.setFontSize(7.2);const label=plain(feetLabel(d.length)+'*'),tw=doc.getTextWidth(label)+1.4;
+      dims.forEach(e=>edgeDimensions(e).filter(d=>d.length>4).forEach(d=>{const key=[d.a,d.b].map(p=>p.map(n=>n.toFixed(2)).join(',')).sort().join('|');if(seen.has(key))return;seen.add(key);const aa=pt(...d.a),bb=pt(...d.b),len=Math.hypot(bb[0]-aa[0],bb[1]-aa[1]),dx=-(bb[1]-aa[1])/len,dz=(bb[0]-aa[0])/len,mid=[(aa[0]+bb[0])/2,(aa[1]+bb[1])/2];doc.setFontSize(7.2);const label=plain(feetLabel(d.length)+` (${d.source==='Croquis'?'C':d.source==='Referencia GIS'?'G':d.source==='Comprobada'?'V':'E'})`),tw=doc.getTextWidth(label)+1.4;
       let chosen:null|{x:number;y:number;offset:number}=null;
       for(const offset of [3,6,9,-3,-6,12,-9]){const x=mid[0]+dx*offset,y=mid[1]+dz*offset,box={x:x-tw/2,y:y-2.3,w:tw,h:3.6};if(box.x<25||box.x+box.w>286||box.y<67||box.y+box.h>240)continue;if(occupied.some(b=>box.x<b.x+b.w&&box.x+box.w>b.x&&box.y<b.y+b.h&&box.y+box.h>b.y))continue;occupied.push(box);chosen={x,y,offset};break}if(!chosen)return;const off=chosen.offset*.55;doc.setDrawColor('#60765a');doc.setLineWidth(.09);doc.line(aa[0]+dx*off,aa[1]+dz*off,bb[0]+dx*off,bb[1]+dz*off);doc.line(aa[0]+dx*off-.65*dz,aa[1]+dz*off+.65*dx,aa[0]+dx*off+.65*dz,aa[1]+dz*off-.65*dx);doc.line(bb[0]+dx*off-.65*dz,bb[1]+dz*off+.65*dx,bb[0]+dx*off+.65*dz,bb[1]+dz*off-.65*dx);doc.setFillColor('#fafbf5');doc.rect(chosen.x-tw/2,chosen.y-2.2,tw,3,'F');text(label,chosen.x,chosen.y,7.2,'#4b6250',{align:'center'});
       }));
@@ -80,7 +80,7 @@ export function buildPdf(project:Project,proposal:Proposal):jsPDF {
     legend.forEach(([color,label])=>{doc.setFillColor(color);doc.rect(314,y-2,3,3,'F');text(label,321,y,8);y+=9});
     y+=9;text('CANTIDADES DE LA ZONA',314,y,9);y+=10;
     const zt=c.totals[zone];for(const [label,value] of [['Superficie nueva',`${fmt(zt.area)} ft²`],['Concreto neto',`${fmt(zt.concrete)} ft²`],['Franjas verdes',`${fmt(zt.grass)} ft²`],['Retiro existente',`${fmt(zt.demolition)} ft²`],['Cuadros con recortes',`${zt.cuts} / ${zt.tiles}`],['Camino / piezas',`${zt.pathPieces}`],['Apoyo por verificar',`${fmt(zt.unverified)} ft²`]]){text(label,314,y,8,'#708264');text(value,399,y,9,'#526d45',{align:'right'});y+=9}
-    y+=7;y=para(mode==='layout'?'Identificadores F / P coinciden con el CSV de despiece. Piezas menores de 0.5 ft² se incluyen en cantidades, sin etiqueta por legibilidad.':'* Cotas de los lados reales del contorno. Dimensiones de estudio, no comprobadas en campo. Sin duplicar solapes ni huecos.',314,y,85,8)+7;
+    y+=7;y=para(mode==='layout'?'Identificadores F / P coinciden con el CSV de despiece. Piezas menores de 0.5 ft² se incluyen en cantidades, sin etiqueta por legibilidad.':'C: croquis / G: GIS / E: estimada / V: comprobada. Cotas de lados reales. Origen por tramo; las fotos no certifican dimensiones de campo.',314,y,85,8)+7;
     y=para(proposal.referenceEdition?'Base: parcela GIS del condado, huella LiDAR 2015, ortofoto local 2026 y fotos del propietario. Linderos, niveles, alturas y cierres pendientes del survey.':'Alternativa anterior: base estimada de croquis y fotografías. Linderos y cierres pendientes de survey.',314,y,85,8)+7;
     if(zone==='back')para('Verificar qué parte de la plataforma está sobre tierra y qué parte está elevada. No se define una estructura nueva con estas imágenes.',314,y,85,8);
   }
@@ -93,6 +93,7 @@ export function buildPdf(project:Project,proposal:Proposal):jsPDF {
     para(`Artificial: ${t.rolls.pieces} cortes; longitud por acomodo ${fmt(t.rolls.cutLinear,2)} ft antes de reserva. ${t.rolls.rolls} rollos completos de ${s.rollWidth} × ${s.rollLength} ft si se compra por rollo. Dirección fija; el acomodo es conservador.`,263,yy,132,9);
     text('APOYOS Y NIVELES',22,242,11);para('Solo las áreas marcadas sobre terreno generan base granular y excavación. Con cota de terreno se integra la diferencia entre terreno y cara inferior de capas; sin cota se usa la profundidad provisional. Las áreas elevadas o por verificar requieren solución independiente.',22,252,370,9);
   }
+  if(proposal.frontCalibration===3){sheet('Frente / controles del croquis y revisión visual','F-05');let fy=67;for(const m of FRONT_CONTROLS){text(m.label,22,fy,11);text(`${m.value} / ${m.source}`,395,fy,10,'#6e815c',{align:'right'});fy=para(m.use,22,fy+7,370,9)+12}para('Recorrido Apple Look Around: frente central, accesos izquierdo y derecho, vistas oblicuas desde ambos extremos. Referencias consultadas el 22 oct 2026; fecha de captura no visible. Se comprueban formas y proporciones, sin convertir imágenes de perspectiva en cotas certificadas.',22,fy+3,370,9)}
   sheet('Capas y decisiones de construcción','D-01');
   text('DOS ZONAS / DOS CONDICIONES DE APOYO',20,65,10);
   const layers=[['CUADROS DE CONCRETO',`Frente ${s.thickness} in / patio ${s.backThickness} in. Parámetros de cálculo, sujetos a verificación.`,s.concreteColor,13],['BASE DE ESTUDIO',`${s.base} in colocadas. Compra con factor ${s.looseFactor}. Verificar composición y compactación.`,'#b9b599',19],['TERRENO / APOYO',`Excavación propuesta ${s.excavation} in. Medir material existente y ajustar niveles reales.`,'#999d76',24]] as const;

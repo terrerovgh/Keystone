@@ -25,6 +25,12 @@ function hip(x:number,z:number,w:number,d:number,eave:number,rise:number,m:Finis
  const a=vs[4],b=vs[5];const ridgeMesh=line([new T.Vector3(...a as [number,number,number]),new T.Vector3(...b as [number,number,number])],m.roof,.16);ridgeMesh.userData.roof=true;g.add(ridgeMesh);
  g.add(block(x,eave-.4,z,w,.35,d,m.trim));
 }
+function gable(x:number,z:number,w:number,d:number,eave:number,rise:number,m:Finish,g:T.Group){
+ const ridge=x+w/2,vertices=[x,eave,z,ridge,eave+rise,z,x+w,eave,z,x,eave,z+d,ridge,eave+rise,z+d,x+w,eave,z+d];
+ const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geo.setIndex([0,3,1,1,3,4,1,4,2,2,4,5]);geo.setAttribute('uv',new T.Float32BufferAttribute([0,0,1.5,1,3,0,0,d/7,1.5,d/7+1,3,d/7],2));geo.computeVertexNormals();const mesh=new T.Mesh(geo,m.roof);mesh.castShadow=true;mesh.receiveShadow=true;mesh.userData.roof=true;g.add(mesh);
+ for(const zz of [z+.05,z+d-.05]){const shape=new T.Shape();shape.moveTo(x,eave);shape.lineTo(x+w,eave);shape.lineTo(ridge,eave+rise);shape.closePath();const cap=new T.Mesh(new T.ShapeGeometry(shape),m.wall);cap.material.side=T.DoubleSide;cap.position.z=zz;g.add(cap)}
+ const ridgeMesh=line([new T.Vector3(ridge,eave+rise,z),new T.Vector3(ridge,eave+rise,z+d)],m.roof,.16);ridgeMesh.userData.roof=true;g.add(ridgeMesh);
+}
 function windowAt(g:T.Group,x:number,y:number,z:number,w:number,h:number,m:Finish,arched=false,side=0){const win=new T.Group();
  const shape=new T.Shape();shape.moveTo(0,0);shape.lineTo(w,0);if(arched){shape.lineTo(w,h-w/2);shape.absarc(w/2,h-w/2,w/2,0,Math.PI,false)}else{shape.lineTo(w,h);shape.lineTo(0,h)}shape.closePath();const glass=new T.Mesh(new T.ShapeGeometry(shape),m.glass);win.add(glass);
  const outline=new T.Line(new T.BufferGeometry().setFromPoints(shape.getPoints(36).map(p=>new T.Vector3(p.x,p.y,-.08))),new T.LineBasicMaterial({color:'#eee9da',linewidth:2}));win.add(outline);
@@ -39,27 +45,29 @@ function canopy(g:T.Group,x:number,z:number,w:number,d:number,m:Finish){
 export function residence(e:Element,m:Finish,roofs:boolean,reference:boolean){const g=new T.Group();
  // Lower walls follow the public 2015 footprint. Heights and facade details are photo-based estimates.
 
- const wings=[[9,45,15,15.7],[15.2,58.5,19,16.5],[33.8,50,22,15.5],[55.5,14.6,18.2,70.8]];
+ const wings=[[15.2,58.5,19,16.5],[33.8,50,22,15.5],[55.5,14.6,18.2,15.4],[55.5,53.5,18.2,31.9]];
  wings.forEach(([x,z,w,d])=>hip(x-.65,z-.6,w+1.3,d+1.2,11.5,3.8,m,g));
  // Central upper volume and gabled street face.
- g.add(block(23.6,0,17.85,26.2,22.2,33,m.wall));g.add(block(9.33,0,28.8,14.32,20.3,17,m.wall));hip(8.7,28.2,15.6,18.2,20.6,3.2,m,g);
- g.add(block(49.8,0,22.08,6.6,21.6,17,m.wall));hip(49.1,21.4,8,18.2,21.9,2.5,m,g);
+ g.add(block(23.6,0,17.85,26.2,22.2,33,m.wall));g.add(block(9.33,0,28.8,14.32,20.3,31.76,m.wall));gable(8.7,28.2,15.6,32.96,20.6,6,m,g);
+ g.add(block(49.8,11.2,30,24,11,23.5,m.wall));hip(49.2,29.4,25.2,24.7,22.6,5.2,m,g);
+ windowAt(g,65.5,16,29.85,2.5,3.5,m);windowAt(g,73.94,15.2,37,3,4,m,false,-Math.PI/2);
+ g.add(block(49.8,0,22.08,6.6,21.6,17,m.wall));windowAt(g,56.48,18.4,25,4,.7,{...m,glass:m.dark as T.MeshPhysicalMaterial},false,-Math.PI/2);hip(49.1,21.4,8,18.2,21.9,2.5,m,g);
  const shape=new T.Shape();shape.moveTo(23.6,22.2);shape.lineTo(49.8,22.2);shape.lineTo(36.7,29.4);shape.closePath();const face=new T.Mesh(new T.ShapeGeometry(shape),m.wall);face.rotation.y=Math.PI;face.scale.x=-1;face.position.z=17.84;g.add(face);
  const roofGeo=new T.BufferGeometry();const rv=[22.8,22.5,17.2,50.6,22.5,17.2,36.7,30,17.2,22.8,22.5,51.8,50.6,22.5,51.8,36.7,30,51.8];roofGeo.setAttribute('position',new T.Float32BufferAttribute(rv,3));roofGeo.setIndex([0,3,2,2,3,5,2,5,1,1,5,4]);roofGeo.setAttribute('uv',new T.Float32BufferAttribute([0,0,4,0,2,1,0,5,4,5,2,6],2));roofGeo.computeVertexNormals();const roof=new T.Mesh(roofGeo,m.roof);roof.castShadow=true;roof.material.side=T.DoubleSide;roof.userData.roof=true;g.add(roof);
  // Photo references: arched upper glass, circular window, projecting lower bays and recessed front door.
- windowAt(g,12.1,11.7,28.67,9.2,8.3,m,true);windowAt(g,32.6,18.1,17.75,7,4.8,m,true);
+ windowAt(g,12.5,11.7,28.67,8.3,8.3,m,true);windowAt(g,32.6,18.1,17.75,7,4.8,m,true);
  const circle=new T.Mesh(new T.CircleGeometry(1.15,40),m.glass);circle.position.set(53,16.4,21.98);g.add(circle);const rim=new T.Mesh(new T.TorusGeometry(1.32,.13,8,48),m.trim);rim.position.set(53,16.4,21.91);g.add(rim);
  
  g.add(block(25.4,0,16.6,14.3,10,2,m.wall));hip(24.8,15.9,15.4,4,10.2,1.5,m,g);windowAt(g,26.1,2.4,16.49,12.8,6.2,m);
  windowAt(g,59,2.5,14.48,11.8,6.4,m);windowAt(g,11.5,2.5,28.65,10,6.5,m);windowAt(g,42,2.2,17.7,5,6.4,m);
- g.add(block(50.2,0,22,5.8,10,.35,m.darkwood));windowAt(g,50.4,.6,21.8,5.2,8.7,{...m,glass:m.darkwood as T.MeshPhysicalMaterial},true);
+ g.add(block(50.2,0,22,5.8,10,.35,m.darkwood));windowAt(g,50.4,1.25,21.8,5.2,8.7,{...m,glass:m.darkwood as T.MeshPhysicalMaterial},true);
  for(const [x,z,w] of [[23.6,17.4,.65],[49.2,17.4,.65],[56,14.2,.65],[73.1,14.2,.65]])g.add(block(x,0,z,w,10.6,.65,m.trim));
  for(const [x,z,w] of [[9.3,28.4,14.4],[23.6,17.4,26.2],[56.4,14.3,17]])g.add(block(x,10.1,z,w,.45,.5,m.trim));
- canopy(g,9.8,16,13.5,12.7,m);canopy(g,56.8,4,16.4,10.5,m);
+ canopy(g,9.8,12.9,13.5,15.8,m);canopy(g,56.8,5.5,16.4,9,m);
  // Rear doors, bays and side windows placed on the traced wings.
  windowAt(g,18.4,2.1,75.11,12.7,7.5,m,false,Math.PI);windowAt(g,40,1,65.5,12,8.5,m,false,Math.PI);windowAt(g,60,2.2,85.5,11.8,7.2,m,false,Math.PI);
  for(const z of [37,51,67])windowAt(g,73.94,2.8,z,8,6,m,false,-Math.PI/2);
- for(const z of [39,52])windowAt(g,9.2,2.7,z+8,8,6,m,false,Math.PI/2);
+ for(const z of [39,52]){windowAt(g,9.2,2.7,z+8,8,6,m,false,Math.PI/2);windowAt(g,9.2,13,z+7,6,5,m,false,Math.PI/2)}
  g.traverse(o=>{if(o.userData.roof)o.visible=roofs});
  const b={x:9.33,z:14.565,w:64.503,d:70.83};const root=new T.Group();g.position.set(-b.x,0,-b.z);root.add(g);root.scale.set(e.width/b.w,e.height/30,e.depth/b.d);root.rotation.y=-e.rotation*Math.PI/180;root.position.set(e.x,e.elevation,e.z);
  // Rotate around the same element center as the plan.

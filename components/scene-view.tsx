@@ -48,7 +48,7 @@ export default function SceneView(props:ViewProps){
  for(let n=1;n<=3;n++)obj.add(block(e.x+.8,e.elevation+.045,e.z+e.depth-.8-n*.65,e.width-1.6,.015,.5,new T.MeshStandardMaterial({color:'#86c3c7',transparent:true,opacity:.55})));
  }else if(e.kind==='dock')obj=dock(e,m);
  else if(e.kind==='furniture')obj=furniture(e,m);
- else if(e.kind==='stairs'){for(let i=0;i<4;i++)obj.add(block(e.x,e.elevation,e.z+i*e.depth/4,e.width,e.height*(4-i)/4,e.depth/4,m.concrete))}
+ else if(e.kind==='stairs'){const count=e.zone==='front'?3:4;for(let i=0;i<count;i++)obj.add(block(e.x,e.elevation,e.z+i*e.depth/count,e.width,e.height*(e.zone==='front'?i+1:count-i)/count,e.depth/count,m.concrete))}
  else if(e.kind==='fixed')obj=solid(polyFor(e),m.sided,.14,e.elevation);
  else if(['paving','path'].includes(e.kind)){obj=solid(polyFor(e),new T.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}),.03,e.elevation+.025)}
  obj.userData.elementId=e.id;group.add(obj);

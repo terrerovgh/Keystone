@@ -22,5 +22,5 @@ export function earthVolumes(poly:MultiPolygon,e:Element,layersIn:number){
 export function edgeDimensions(e:Element){let pts:Point[];if(e.shape==='ellipse')return [];
  pts=e.shape==='polygon'&&e.points?e.points:[[0,0],[e.width,0],[e.width,e.depth],[0,e.depth]];
  if(pts.length>3&&pts[0][0]===pts.at(-1)![0]&&pts[0][1]===pts.at(-1)![1])pts=pts.slice(0,-1);
- return pts.map((a,i)=>{const b=pts[(i+1)%pts.length],world=(p:Point)=>{const q=rotate([p[0]-e.width/2,p[1]-e.depth/2],e.rotation);return [e.x+e.width/2+q[0],e.z+e.depth/2+q[1]] as Point};return {a:world(a),b:world(b),length:Math.hypot(b[0]-a[0],b[1]-a[1])}})
+ return pts.map((a,i)=>{const b=pts[(i+1)%pts.length],world=(p:Point)=>{const q=rotate([p[0]-e.width/2,p[1]-e.depth/2],e.rotation);return [e.x+e.width/2+q[0],e.z+e.depth/2+q[1]] as Point};return {a:world(a),b:world(b),length:Math.hypot(b[0]-a[0],b[1]-a[1]),source:e.edgeSources?.[String(i)]??e.source}})
 }

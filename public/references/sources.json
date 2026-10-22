@@ -54,5 +54,27 @@
       "apple-lookaround-derecha.png"
     ],
     "accuracy": "Visual reference only. No dimensions derived from perspective imagery."
+  },
+  "frontCalibration": {
+    "edition": 3,
+    "source": "Croquis del propietario + huella GIS + ortofoto + recorrido Apple Look Around",
+    "controls": {
+      "leftDepthFt": 37,
+      "leftWidthFt": 14.333333333333334,
+      "approachThroatFt": 12,
+      "approachDepthFt": 10,
+      "proposedMedianWidthFt": 25,
+      "rightStripWidthFt": 4.666666666666667,
+      "rightStripLengthFt": 35
+    },
+    "unresolved": [
+      "25 ft 7 in del retorno derecho: extremos por confirmar",
+      "Tramo de 14 ft: ubicación por confirmar",
+      "Ancho y posición exactos de acera",
+      "Radios de las bocas",
+      "Alturas y niveles",
+      "Diferencia entre huella GIS 2015 y obra actual"
+    ],
+    "notes": "El croquis controla las longitudes conocidas. Fotos y ortofoto orientan ubicación y forma; no confirman medidas de campo."
   }
 }
