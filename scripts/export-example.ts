@@ -1,0 +1,9 @@
+import {mkdirSync,writeFileSync} from 'node:fs';
+import {createProject} from '../lib/project';
+import {buildPdf,csv} from '../lib/exports';
+const project=createProject(),proposal=project.proposals[0];
+const output=process.argv[2]??'../output';mkdirSync(output+'/pdf',{recursive:true});
+writeFileSync(output+'/pdf/Keystone-planificacion.pdf',Buffer.from(buildPdf(project,proposal).output('arraybuffer')));
+writeFileSync(output+'/Keystone-materiales.csv',csv(project,proposal));
+writeFileSync(output+'/Keystone-proyecto.json',JSON.stringify(project,null,2));
+console.log('Expediente, cantidades y copia editable exportados.');

@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {createProject} from '../lib/project';
+const base='http://127.0.0.1:8787',owner='integration-test-'+Date.now();
+const h={'Content-Type':'application/json','oai-authenticated-user-id':owner,'oai-authenticated-user-email':'test@sites.test'};
+const get=async(path:string,headers=h)=>{const r=await fetch(base+path,{headers});return {status:r.status,data:await r.json() as any}};
+const initial=await get('/api/project');assert.equal(initial.status,200);assert.equal(initial.data.revision,0);
+const project=createProject();
+const put=async(revision:number,p=project)=>{const r=await fetch(base+'/api/project',{method:'PUT',headers:h,body:JSON.stringify({project:p,expectedRevision:revision})});return {status:r.status,data:await r.json() as any}};
+assert.equal((await put(0)).data.revision,1);
+const reopened=await get('/api/project');assert.deepEqual(reopened.data.project,project);
+assert.equal((await put(0)).status,409);assert.equal((await put(1)).data.revision,2);
+const invalid=structuredClone(project);invalid.proposals[0].settings.tile=0;assert.equal((await put(2,invalid)).status,400);
+const saved=await fetch(base+'/api/versions',{method:'POST',headers:h,body:JSON.stringify({name:'Versión de prueba',project})});const version=await saved.json() as any;assert.equal(saved.status,200);
+assert.ok((await get('/api/versions')).data.versions.some((v:any)=>v.id===version.id));
+assert.deepEqual((await get('/api/versions?id='+version.id)).data.project,project);
+assert.equal((await get('/api/versions?id='+version.id,{...h,'oai-authenticated-user-id':'different-test-owner'})).status,404);
+const unauth=await fetch(base+'/api/project');assert.equal(unauth.status,401);
+console.log('PASS: guardado, reapertura, conflictos, validación, versiones, aislamiento entre usuarios y autenticación.');
