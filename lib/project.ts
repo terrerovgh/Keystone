@@ -105,7 +105,8 @@ export function createLegacyProject(): Project {
     ],checklist:{},updatedAt:new Date().toISOString()};
 }
 export function createProject():Project{return ensureFacade(withFrontCalibration(withReferenceEdition(createLegacyProject(),false),false))}
-export const upgradeProject=(p:Project)=>ensureFacade(withFrontCalibration(withReferenceEdition(p,true),true));
+// Viewing the photo facade must not write a new revision while another tab is editing.
+export const upgradeProject=(p:Project)=>withFrontCalibration(withReferenceEdition(p,true),true);
 export const baselineFor=(p:Project,v:Proposal)=>v.baseline??p.existing;
 export const activeProposal=(p:Project)=>p.proposals.find(x=>x.id===p.activeId)??p.proposals[0];
 export const fmt=(n:number,d=1)=>new Intl.NumberFormat('es-US',{maximumFractionDigits:d}).format(n);
