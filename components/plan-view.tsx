@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { area, demolitionFor, bounds, footprint, mapPoly, pathData, polyFor, rect, ringFor, rotate, visibleFootprint, type Surface } from '@/lib/geometry';
 import { edgeDimensions } from '@/lib/engineering';
+import { PATIO_ESTIMATE } from '@/lib/patio-estimate';
 import { feetLabel, referenceFrame, SITE } from '@/lib/site-reference';
 import { type Element, type Kind, type Point, type Proposal, type Zone } from '@/lib/project';
 import type { FacadeModel } from '@/lib/facade';
@@ -46,7 +47,7 @@ export default function PlanView({proposal,zone,stage,existing,data,selected,onS
  if(['paving','path'].includes(e.kind))return <path key={e.id} data-element={e.id} d={pathData(polyFor(e))} fill={e.action==='conservar'&&stage==='proposed'?'url(#deck-lines)':'transparent'} stroke={selected?'#b57738':'transparent'} strokeWidth=".2" onPointerDown={ev=>start(ev,e)} style={{pointerEvents:['draw','measure','tile','pan'].includes(tool)?'none':'visiblePainted'}}/>;
  return <g key={e.id} onPointerDown={ev=>start(ev,e)} style={{pointerEvents:['draw','measure','pan'].includes(tool)?'none':'auto'}}>
  {e.kind==='palm'?<g><circle cx={e.x+e.width/2} cy={e.z+e.depth/2} r="4" fill="#738957" opacity=".2"/>{e.id!=='palm-remove'&&Array.from({length:10},(_,i)=>{const a=i*Math.PI/5,x=e.x+e.width/2,z=e.z+e.depth/2;return <path key={i} d={`M${x},${z}Q${x+Math.cos(a+.2)*2},${z+Math.sin(a+.2)*2} ${x+Math.cos(a)*4.2},${z+Math.sin(a)*4.2}`} stroke="#647f49" strokeWidth=".28" fill="none"/>})}<circle cx={e.x+e.width/2} cy={e.z+e.depth/2} r=".35" fill="#8e795b"/>{stage==='demolition'&&proposal.elements.find(x=>x.id===e.id)?.action==='retirar'&&<path d={`M${e.x-1},${e.z-1}l4,4m0,-4l-4,4`} stroke="#b7613f" strokeWidth=".25"/>}</g>:<path d={pathData(visibleFootprint(e,es))} fillOpacity={aerial&&e.kind==='house'?.65:1} fill={e.kind==='house'?'url(#roof-lines)':e.kind==='pool'?'#8fbdc1':e.kind==='garden'?'#9aa47a':e.kind==='dock'?'url(#deck-lines)':e.kind==='fixed'?'#e4e2d7':e.color} stroke={selected?'#b57738':e.kind==='house'?'#928c7b':'#929e85'} strokeWidth={selected?.2:.1} fillRule="evenodd"/>}
- {e.kind==='pool'&&<path d={pathData(polyFor({...e,x:e.x+.6,z:e.z+.6,width:e.width-1.2,depth:e.depth-1.2}))} fill="none" stroke="#d6e3de" strokeWidth=".2"/>}
+ {e.kind==='pool'&&<path d={pathData(polyFor({...e,x:e.x+(e.style==='croquis-pool'?.5:.6),z:e.z+(e.style==='croquis-pool'?.5:.6),width:e.width-(e.style==='croquis-pool'?1:1.2),depth:e.depth-(e.style==='croquis-pool'?1:1.2)}))} fill="none" stroke="#d6e3de" strokeWidth=".2"/>}
  </g>})}
  {sel&&stage==='proposed'&&!sel.locked&&tool!=='draw'&&tool!=='measure'&&<g>
  <path d={pathData(polyFor(sel))} fill="none" stroke="#b57738" strokeWidth=".16" strokeDasharray=".4 .2" pointerEvents="none"/>
@@ -55,8 +56,14 @@ export default function PlanView({proposal,zone,stage,existing,data,selected,onS
  </g>}
  </g>
  {dimensions&&<>{sel?dims.filter(d=>d.length>1).map((d,i)=>dimension(d.a,d.b,feetLabel(d.length)+` · ${d.source==='Croquis'?'C':d.source==='Referencia GIS'?'G':d.source==='Comprobada'?'V':'E'}`,`d${i}`,1)):dimension([0,0],[f.width,0],`${feetLabel(f.width)} · ${proposal.referenceEdition?'GIS':'estimado'}`,'front',-2)}{es.filter(e=>e.kind==='pool'&&(zone==='back'||whole)).map(e=>dimension([e.x,e.z],[e.x,e.z+e.depth],`${feetLabel(e.depth)} · estimado`,e.id,2))}</>}
+ {dimensions&&proposal.patioCalibration===1&&zone==='back'&&!sel&&<>
+ {dimension([PATIO_ESTIMATE.left,75],[PATIO_ESTIMATE.left,112],"37′ · C",'patio-left',3)}
+ {dimension([PATIO_ESTIMATE.right,85],[PATIO_ESTIMATE.right,112],"27′ · C",'patio-right',-3)}
+ {dimension([PATIO_ESTIMATE.left,112],[PATIO_ESTIMATE.left+16,112],"16′ · C",'patio-band',3)}
+ {dimension([PATIO_ESTIMATE.left+16,112],[PATIO_ESTIMATE.right,112],"50′ · C",'patio-rest',3)}
+ </>}
  {dimensions&&!sel&&proposal.frontCalibration===3&&zone==='front'&&dimension([29.5,-8.2],[54.5,-8.2],"25′ · C",'median-control',-3)}
- {es.filter(e=>(whole||e.zone===zone||e.kind==='house')&&['house','pool','dock','stairs'].includes(e.kind)).map(e=>textAt([e.x+e.width/2,e.z+e.depth/2],e.kind==='house'?'CASA · CONSERVAR':e.kind==='pool'?'PISCINA · CONSERVAR':e.kind==='dock'?'MUELLE':'ESCALONES',e.id))}
+ {es.filter(e=>(whole||e.zone===zone||e.kind==='house')&&(['house','pool','dock','stairs'].includes(e.kind)||e.style==='covered-terrace')).map(e=>textAt([e.x+e.width/2,e.z+e.depth/2],e.style==='covered-terrace'?`TERRAZA CUBIERTA ${feetLabel(e.elevation)}`:e.kind==='house'?'CASA · CONSERVAR':e.kind==='pool'?'PISCINA · CONSERVAR':e.kind==='dock'?`MUELLE ${feetLabel(e.elevation)}`:e.style==='house-descent'?'CASA → PATIO · 4 R':e.style==='dock-descent'?'PATIO → MUELLE · 2 R':'ESCALONES',e.id))}
  {numbers&&[...data.tiles,...data.pathTiles].map((t,i)=>{const b=bounds(t.polygon);return textAt([(b.x+b.maxX)/2,(b.z+b.maxZ)/2],`${zone==='front'?'F':'P'}${i+1}`,t.id,'#8c8d7d')})}
  {measureLine.length===2&&<>{dimension(measureLine[0],measureLine[1],feetLabel(Math.hypot(measureLine[1][0]-measureLine[0][0],measureLine[1][1]-measureLine[0][1])),'measure',1)}<path d={`M${measureLine[0][0]},${-measureLine[0][1]}L${measureLine[1][0]},${-measureLine[1][1]}`} stroke="#ad6a36" strokeWidth=".12" strokeDasharray=".4 .2"/></>}
  {drawLine.length>0&&<path d={`M${drawLine.map(([x,z])=>`${x},${-z}`).join('L')}`} fill={drawLine.length>2?'#c5bca844':'none'} stroke="#aa713d" strokeWidth=".15" strokeDasharray=".4 .15"/>}

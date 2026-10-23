@@ -24,7 +24,7 @@ export interface Settings {
 }
 export interface Rate { value: number | null; source: string; date: string; url?: string }
 export interface Measure { id: string; label: string; value: string; source: Source; note: string }
-export interface Proposal { frontCalibration?:3; referenceEdition?: 2; baseline?: Element[]; id: string; name: string; description: string; elements: Element[]; settings: Settings; exceptions: Record<string, 'turf' | 'concrete'> }
+export interface Proposal { patioCalibration?:1; frontCalibration?:3; referenceEdition?: 2; baseline?: Element[]; id: string; name: string; description: string; elements: Element[]; settings: Settings; exceptions: Record<string, 'turf' | 'concrete'> }
 export interface Project {
   facade?:FacadeModel;
   frontCalibration?:3; referenceEdition?: 2; schemaVersion: 1; title: string; address: string; activeId: string; proposals: Proposal[];
@@ -124,7 +124,7 @@ export function validProject(raw: unknown): raw is Project {
   if(!p.measures.every(m=>obj(m)&&str(m.id,120)&&str(m.label,150)&&str(m.value,150)&&str(m.note,1000)&&['Comprobada','Croquis','Estimada','Referencia GIS'].includes(m.source)))return false;
   if(new Set(p.proposals.map(v=>v?.id)).size!==p.proposals.length)return false;
   return p.proposals.every(v=>{
-    if(!obj(v)||!str(v.id,120)||!str(v.name,120)||!str(v.description,400)||!obj(v.settings)||!obj(v.exceptions)||Object.keys(v.exceptions).length>16000||!Object.entries(v.exceptions).every(([id,state])=>/^(front|back):-?\d+:-?\d+$/.test(id)&&['turf','concrete'].includes(state))||!validElements(v.elements)||(v.baseline!==undefined&&!validElements(v.baseline)))return false;
+    if(!obj(v)||(v.patioCalibration!==undefined&&v.patioCalibration!==1)||!str(v.id,120)||!str(v.name,120)||!str(v.description,400)||!obj(v.settings)||!obj(v.exceptions)||Object.keys(v.exceptions).length>16000||!Object.entries(v.exceptions).every(([id,state])=>/^(front|back):-?\d+:-?\d+$/.test(id)&&['turf','concrete'].includes(state))||!validElements(v.elements)||(v.baseline!==undefined&&!validElements(v.baseline)))return false;
     const s=v.settings;
     if(!Object.keys(baseSettings).every(k=>k in s)||!Object.entries(s).every(([k,value])=>typeof value==='number'?finite(value,-1000,10000):typeof value==='string'))return false;
     return finite(s.tile,1,12)&&finite(s.gap,.1,2)&&finite(s.angle,-90,90)&&finite(s.gridX,-20,20)&&finite(s.gridZ,-20,20)&&finite(s.thickness,1,12)&&finite(s.backThickness,1,12)&&finite(s.base,0,24)&&finite(s.excavation,0,36)&&finite(s.waste,0,50)&&finite(s.looseFactor,1,2)&&finite(s.rollWidth,1,30)&&finite(s.rollLength,1,200)&&finite(s.crew,1,30)&&finite(s.productivity,1,1000)&&finite(s.hours,1,16)&&finite(s.demolitionFront,.25,12)&&finite(s.demolitionBack,.25,12)&&finite(s.soil,0,24)&&finite(s.curingDays,0,90)&&finite(s.overhead,0,100)&&finite(s.contingency,0,100)&&finite(s.tax,0,30)&&(s.sodPack===undefined||finite(s.sodPack,1,2000))&&(s.minTurf===undefined||finite(s.minTurf,0,10000))&&(s.infillLb===undefined||finite(s.infillLb,0,10))&&(s.turfUnit===undefined||['linear','roll'].includes(s.turfUnit))&&(s.sodUnit===undefined||['area','pallet'].includes(s.sodUnit))&&['artificial','natural'].includes(s.turf)&&['vaciado','prefabricado'].includes(s.method)&&/^#[0-9a-fA-F]{6}$/.test(s.concreteColor);

@@ -1,5 +1,5 @@
 import type { Element, Point } from './project';
-import { area, bounds, difference, intersection, polyFor, rotate, union, type MultiPolygon } from './geometry';
+import { area, bounds, difference, intersection, polyFor, ringFor, rotate, union, type MultiPolygon } from './geometry';
 export function validRing(points:Point[]){
  const r=points.filter((p,i)=>!i||p[0]!==points[i-1][0]||p[1]!==points[i-1][1]);if(r.length>3&&r[0][0]===r.at(-1)![0]&&r[0][1]===r.at(-1)![1])r.pop();if(r.length<3)return false;
  const cross=(a:Point,b:Point,c:Point)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
@@ -20,7 +20,7 @@ export function earthVolumes(poly:MultiPolygon,e:Element,layersIn:number){
  return {cut:integrate(clip(true)),fill:integrate(clip(false))};
 }
 export function edgeDimensions(e:Element){let pts:Point[];if(e.shape==='ellipse')return [];
- pts=e.shape==='polygon'&&e.points?e.points:[[0,0],[e.width,0],[e.width,e.depth],[0,e.depth]];
+ pts=ringFor({...e,x:0,z:0,rotation:0}) as Point[];
  if(pts.length>3&&pts[0][0]===pts.at(-1)![0]&&pts[0][1]===pts.at(-1)![1])pts=pts.slice(0,-1);
  return pts.map((a,i)=>{const b=pts[(i+1)%pts.length],world=(p:Point)=>{const q=rotate([p[0]-e.width/2,p[1]-e.depth/2],e.rotation);return [e.x+e.width/2+q[0],e.z+e.depth/2+q[1]] as Point};return {a:world(a),b:world(b),length:Math.hypot(b[0]-a[0],b[1]-a[1]),source:e.edgeSources?.[String(i)]??e.source}})
 }

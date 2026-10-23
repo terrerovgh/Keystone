@@ -17,6 +17,7 @@ export const facadeReferences=[
  {path:'/references/fachada-izquierda-propietario.png',label:'Ala izquierda · cubierta del auto'},
  {path:'/photos/acceso.jpg',label:'Foto del propietario · acceso'},
  {path:'/photos/frente.jpg',label:'Foto del propietario · frente'},
+ {path:'/references/listing/frente-publicado.png',label:'Foto pública · frente, miradores y acceso'},
 ];
 function part(id:string,name:string,zone:FacadeZone,kind:FacadeKind,x:number,y:number,z:number,width:number,height:number,depth:number,extra:Partial<FacadePart>={}):FacadePart{return {id,name,zone,kind,x,y,z,width,height,depth,rotation:0,color:['window','bay','oculus'].includes(kind)?'#526c66':['gable','hip'].includes(kind)?'#b96b48':'#ddd0ba',visible:true,source:'Estimada',note:'Proporción visual de fotografías. Posición, espesor y medidas pendientes de comprobación en la casa.',rise:0,columns:3,rows:3,arch:'rect',posts:0,slope:1,...extra}}
 export function createPreviousFacade():FacadeModel{return {version:1,wallColor:'#d8cfbc',trimColor:'#eeeade',roofColor:'#b96b48',roofDetail:true,parts:[

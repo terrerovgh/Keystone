@@ -37,7 +37,7 @@ export function poolEntry(width:number,depth:number,edge:number,m:Finish){
 }
 
 export function photoPool(e:Element,m:Finish,woodCoping:boolean) {
-  const g=new T.Group(),w=e.width,d=e.depth,edge=Math.min(.65,w*.1,d*.1),bottom=-Math.max(1,e.height),inner=rect(edge,edge,w-edge*2,d-edge*2);
+  const g=new T.Group(),w=e.width,d=e.depth,edge=e.style==='croquis-pool'?.5:Math.min(.65,w*.1,d*.1),bottom=-Math.max(1,e.height),inner=rect(edge,edge,w-edge*2,d-edge*2);
   const tile=new T.MeshStandardMaterial({color:'#83c4c6',roughness:.55});
   // The excavation hides the land under the open basin in the scene.
   g.add(solid(difference(rect(0,0,w,d),inner),woodCoping?m.darkwood:m.pool,.28,.13));
@@ -56,10 +56,10 @@ export function photoPool(e:Element,m:Finish,woodCoping:boolean) {
 }
 
 export function photoSteps(e:Element,m:Finish) {
-  const g=new T.Group(),tile=m.paver.clone();tile.color.set('#c28b70');
-  for(let i=0;i<3;i++){const inset=i*.35,z=e.z,w=e.width-inset*2,depth=e.depth*(3-i)/3,bevel=Math.min(1.1,w*.12),x=e.x+inset;
-    const ring:[number,number][]=[[x,z],[x+w,z],[x+w,z+depth-bevel],[x+w-bevel,z+depth],[x+bevel,z+depth],[x,z+depth-bevel]];
-    g.add(solid([[ring]],tile,e.height*(i+1)/3,e.elevation+e.height*(i+1)/3));
+  const g=new T.Group(),dock=e.style==='dock-descent',count=dock?2:e.style==='house-descent'?4:3,tile=(dock?m.wood:m.paver).clone();if(!dock)tile.color.set('#c28b70');
+  for(let i=0;i<count;i++){const inset=dock?0:i*.35,z=e.z,w=e.width-inset*2,depth=e.depth*(count-i)/count,bevel=dock?0:Math.min(e.style==='house-descent'?1.6:1.1,w*.12,depth*.8),x=e.x+inset;
+    const ring:[number,number][] = bevel?[[x,z],[x+w,z],[x+w,z+depth-bevel],[x+w-bevel,z+depth],[x+bevel,z+depth],[x,z+depth-bevel]]:[[x,z],[x+w,z],[x+w,z+depth],[x,z+depth]];
+    const stair=solid([[ring]],tile,e.height*(i+1)/count,e.elevation+e.height*(i+1)/count);stair.name=`${dock?'dock':'house'}-tread-${i+1}`;g.add(stair);
   }return g;
 }
 
@@ -105,11 +105,11 @@ export function videoDockDetails(e:Element,elements:Element[],m:Finish){
   const g=deckSurface(polyFor(e),m,e.elevation+.08,e,'z');
   if(e.id!=='dock')return g;
   const palm=elements.find(p=>p.id==='back-palm'),anchor=palm?palm.x+palm.width/2:e.x+e.width*.74;
-  const x=Math.max(e.x,Math.min(anchor-5,e.x+e.width-7)),z=e.z-1.8,wood=m.darkwood.clone();wood.color.set('#6b4b34');
+  const x=Math.max(e.x,Math.min(anchor-5,e.x+e.width-7)),z=e.z-1.8,benchLevel=elements.find(p=>p.id==='back-floor')?.elevation??e.elevation,wood=m.darkwood.clone();wood.color.set('#6b4b34');
   const bench=(xx:number,zz:number,w:number,d:number)=>{
-    g.add(block(xx,e.elevation,zz,w,1.35,d,wood));
-    g.add(block(xx-.04,e.elevation+1.35,zz-.04,w+.08,.16,d+.08,m.wood));
-    for(let n=xx+.5;n<xx+w;n+=.5)g.add(block(n,e.elevation,zz-.015,.014,1.3,.025,m.darkwood));
+    g.add(block(xx,benchLevel,zz,w,1.35,d,wood));
+    g.add(block(xx-.04,benchLevel+1.35,zz-.04,w+.08,.16,d+.08,m.wood));
+    for(let n=xx+.5;n<xx+w;n+=.5)g.add(block(n,benchLevel,zz-.015,.014,1.3,.025,m.darkwood));
   };
   bench(x,z,4.5,1.5);bench(x+4.5,z,1.5,4.2);
   // Only sparse full-size mooring piles, not a regular fence of small posts.

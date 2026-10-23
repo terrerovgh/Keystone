@@ -95,5 +95,75 @@
       "Bancos integrados, hueco de palma y transición perpendicular al muelle"
     ],
     "accuracy": "Observación visual con fotogramas fechados por tiempo de video. Sin escala métrica ni reconstrucción fotogramétrica. No se alteran contornos ni cotas guardadas."
+  },
+  "patioEstimate": {
+    "date": "2026-10-23",
+    "method": "Croquis como controles locales de cierre; plano publicado para topología de patio cubierto y escalinata; huella y ortofoto oficiales para orientación y posición; videos y fotos para materiales y encuentros. No se efectuó fotogrametría ni medición topográfica.",
+    "floorPlan": {
+      "listing": "https://www.apartments.com/2331-keystone-blvd-north-miami-fl/fer33vt/",
+      "image": "https://images1.apartments.com/i2/Gcy48gMsWJHgN3T1huE40Hfo9rT8de-fSBiJjZsEpiw/111/2331-keystone-blvd-north-miami-fl-building-photo.jpg?p=1",
+      "localCapture": "/references/listing/plano-publicado.png",
+      "notes": "Imagen sin cotas numéricas: usada para relación entre recintos, patio cubierto, escalera central y piscina. Rotulación MLS 2024."
+    },
+    "publicPoolPhoto": "/references/listing/piscina-publicada.png",
+    "dockLengthSource": "https://www.redfin.com/FL/North-Miami/2331-Keystone-Blvd-33181/home/42869510",
+    "appliedControlsFeet": {
+      "leftDepth": 37,
+      "rightDepth": 27,
+      "interpretedWidth": 66,
+      "widthSegments": [
+        16,
+        50
+      ],
+      "poolSideMarginToWater": 4,
+      "poolRearMarginToWater": 5,
+      "dockProjection": [
+        15,
+        5
+      ]
+    },
+    "derivedNotMeasuredFeet": {
+      "poolWater": [
+        12,
+        27
+      ],
+      "poolExterior": [
+        13,
+        28
+      ],
+      "houseLevel": 2.3333333333333335,
+      "dockLevel": -1.1666666666666667,
+      "centralStairWidth": 20.5,
+      "centralStairRun": 5
+    },
+    "verticalAssumptionsInches": {
+      "houseRise": 28,
+      "houseRisers": 4,
+      "dockDrop": 14,
+      "dockRisers": 2
+    },
+    "ownerCorrection": "Muelle inferior al patio, con escalones de bajada. Centro y dos alas deben representarse por separado.",
+    "listingExteriorPhotos": [
+      {
+        "localCapture": "/references/listing/escalera-central-publicada.png",
+        "image": "https://images1.apartments.com/i2/yTeWFlxZioyvpYF_ND2KQmv650LtwA8CCvk3f3zQoEQ/111/2331-keystone-blvd-north-miami-fl-building-photo.jpg?p=1",
+        "use": "Vista desde muelle: escalera central achaflanada, ala baja, porche bajo habitaciones, balcón angular y torre posterior. Alturas y posiciones visuales estimadas."
+      },
+      {
+        "localCapture": "/references/listing/muelle-lateral-publicado.png",
+        "image": "https://images1.apartments.com/i2/YylMCWp47QrAibuT0ayUtpIOPuSXPFQWQgwr5jR2cC8/111/2331-keystone-blvd-north-miami-fl-building-photo.jpg?p=1",
+        "use": "Muelle inferior y transiciones de madera. Niveles y anchos no medidos."
+      },
+      {
+        "localCapture": "/references/listing/patio-hacia-canal.png",
+        "image": "https://images1.apartments.com/i2/H9ecKfP8vdIRXbQHc8jkqNX1agwoy9j3n9Uwu7CZF5U/111/2331-keystone-blvd-north-miami-fl-building-photo.jpg?p=1",
+        "use": "Relación de piscina, comedor, jardineras y salida al muelle."
+      },
+      {
+        "localCapture": "/references/listing/frente-publicado.png",
+        "image": "https://images1.apartments.com/i2/kq1UvofA3y8WcmDrvQTMzdRTobon-A-KmPJL0lVu6Kk/111/2331-keystone-blvd-north-miami-fl-building-photo.jpg?p=1",
+        "use": "Contraste del frente revisado: miradores, portal, cubiertas y jardín."
+      }
+    ]
   }
 }

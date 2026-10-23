@@ -3,6 +3,7 @@ import { block, solid, type Finish } from './scene-models';
 import { difference, rect } from './geometry';
 import { SITE } from './site-reference';
 import { createFacade,resolveFacade, type FacadeModel, type FacadePart } from './facade';
+import { PATIO_ESTIMATE } from './patio-estimate';
 import type { Element } from './project';
 
 const material=(color:string,roughness=.85)=>new T.MeshStandardMaterial({color,roughness});
@@ -78,18 +79,66 @@ function portalMesh(p:FacadePart,m:Finish){const g=new T.Group(),w=p.width,h=p.h
  return g;
 }
 function gateMesh(p:FacadePart,m:Finish){const g=new T.Group(),mat=material(p.color,.4),w=p.width,h=p.height;for(const x of [0,w-.14])g.add(block(x,0,0,.14,h,.16,mat));for(const y of [0,h-.13])g.add(block(0,y,0,w,.13,.16,mat));for(let i=1;i<p.columns;i++)g.add(block(i*w/p.columns,0,.04,.055,h,.055,mat));for(let i=1;i<p.rows;i++)g.add(block(0,i*h/p.rows,0,w,.085,.13,mat));g.add(block(w-.35,h*.48,-.1,.2,.08,.22,m.dark));g.scale.z=p.depth/.18;return g}
-export function photoResidence(e:Element,m:Finish,roofs:boolean,model:FacadeModel=createFacade(),selected?:string|null,roofDetail=true){
+
+function estimatedRearArchitecture(m:Finish,template:FacadePart,detail:boolean){
+ const g=new T.Group(),r=PATIO_ESTIMATE,level=r.houseLevel,white=material('#eeeae0');g.name='calibrated-rear-architecture';
+ // The low left wing is an open covered terrace in the published floor plan.
+ g.add(block(15.52,0,74.84,18.46,level,.22,white));
+ g.add(block(15.5,level-.06,74.8,18.5,.12,.32,m.paver));
+ for(const x of [15.55,33.6])g.add(block(x,level,74.88,.38,8.4,.38,white));
+ for(let y=level+.45;y<level+3.5;y+=.52)g.add(block(15.9,y,75.03,17.7,.09,.1,white));
+ for(const x of [21.5,27.5])g.add(block(x,level+.15,75.04,.075,3.4,.09,white));
+ // The listing's rear photo and upper-floor plan show rooms over the pool-side
+ // porch, an angular open balcony over the central landing, and a third-floor room.
+ // These are photo estimates; the low primary-bedroom wing remains independent.
+ const upper=11.7;
+ g.add(block(15.52,upper,58.5,18.46,10.6,16.5,m.wall));
+ g.add(block(33.98,upper,51,21.32,10.6,14.33,m.wall));
+ const balcony:[number,number][]=[[33.98,r.centerWall],[55.3,r.centerWall],[55.3,74],[43,82],[33.98,82]];
+ const slab=solid([[balcony]],m.trim,.48,upper);slab.name='angular-upper-balcony';g.add(slab);
+ g.add(solid([[balcony]],m.paver,.08,upper+.08));
+ const railing=(a:[number,number],b:[number,number],base:number)=>{
+  const length=Math.hypot(b[0]-a[0],b[1]-a[1]);
+  for(let i=0;i<=Math.ceil(length/5);i++){const t=i/Math.ceil(length/5);g.add(block(a[0]+(b[0]-a[0])*t-.05,base,a[1]+(b[1]-a[1])*t-.05,.1,3.5,.1,white))}
+  for(let y=.35;y<=3.5;y+=.52)g.add(tube([new T.Vector3(a[0],base+y,a[1]),new T.Vector3(b[0],base+y,b[1])],white,.045));
+ };
+ for(let i=1;i<balcony.length;i++)railing(balcony[i],balcony[(i+1)%balcony.length],upper+.08);
+ for(const [x,z] of [[33.98,81.7],[54.9,73.7]])g.add(block(x-.22,level,z-.22,.44,upper-level,.44,white));
+ const upperWindow={...template,width:5.2,height:6,depth:.32,columns:2,rows:2,arch:'rect' as const};
+ const opening=(x:number,y:number,z:number,w=upperWindow.width,h=upperWindow.height)=>{const win=windowMesh({...upperWindow,width:w,height:h},m);win.position.set(x,y,z);win.rotation.y=Math.PI;g.add(win)};
+ opening(28.4,upper+2,75.04);opening(49.6,upper+.2,r.centerWall+.04,6.5,7.4);
+ g.add(block(15.52,22.3,63.3,12.4,8.6,11.7,m.wall));
+ opening(24.9,24,75.04,3.2,4.5);
+ const crown=roofMesh({...template,kind:'hip',width:13.7,depth:13,height:.3,rise:1.1},m,detail);crown.position.set(14.87,31.2,62.65);crown.userData.roof=true;g.add(crown);
+ const bedroomRoof=roofMesh({...template,kind:'hip',width:19.76,depth:17.7,height:.3,rise:2.8},m,detail);bedroomRoof.position.set(14.87,22.6,57.9);bedroomRoof.userData.roof=true;g.add(bedroomRoof);
+ const loftRoof=roofMesh({...template,kind:'hip',width:22.62,depth:15.53,height:.3,rise:2.8},m,detail);loftRoof.position.set(33.33,22.6,50.4);loftRoof.userData.roof=true;g.add(loftRoof);
+ // Small rounded balcony and spiral stair visible on the pool-side return.
+ const highBalcony=block(18.3,22.2,75,8.2,.32,2.4,m.trim);g.add(highBalcony);railing([18.3,77.4],[26.5,77.4],22.52);railing([18.3,75],[18.3,77.4],22.52);railing([26.5,75],[26.5,77.4],22.52);
+ const spiral=new T.Group();spiral.name='rear-spiral-stair-estimated';
+ spiral.add(block(28.05,upper,75.7,.16,22.3-upper,.16,white));
+ for(let i=0;i<16;i++){const a=i*Math.PI/8,y=upper+(22.3-upper)*i/16,step=block(0,-.07,-.2,1.65,.11,.4,m.metal);step.rotation.y=-a;const pivot=new T.Group();pivot.position.set(28.13,y,75.78);pivot.add(step);spiral.add(pivot)}g.add(spiral);
+ const french={...template,width:7,height:7.2,depth:.35,columns:2,rows:3,arch:'rect' as const};
+ const door=windowMesh(french,m);door.position.set(50.3,level,r.centerWall+.03);door.rotation.y=Math.PI;g.add(door);
+ const kitchen={...template,width:10.8,height:4.8,depth:1.0,y:level+2.2,columns:3,rows:2,arch:'rect' as const};
+ const bay=bayMesh(kitchen,m);bay.position.set(33.2,0,r.centerWall+.05);bay.rotation.y=Math.PI;g.add(bay);
+ const bedroom={...template,width:11.8,height:5.8,depth:1.05,y:level+1.8,columns:3,rows:2,arch:'rect' as const};
+ const right=bayMesh(bedroom,m);right.position.set(71.8,0,85.4);right.rotation.y=Math.PI;g.add(right);
+ // Side door from primary wing onto the covered terrace.
+ const side=windowMesh({...french,width:3,columns:1},m);side.position.set(55.26,level,73.6);side.rotation.y=-Math.PI/2;g.add(side);
+ return g;
+}
+export function photoResidence(e:Element,m:Finish,roofs:boolean,model:FacadeModel=createFacade(),selected?:string|null,roofDetail=true,rearCalibrated=false){
  model=resolveFacade(model);
  const g=new T.Group(),wall=m.wall.clone(),trim=m.trim.clone(),roof=m.roof.clone();wall.color.set(model.wallColor);trim.color.set(model.trimColor);roof.color.set(model.roofColor);const local={...m,wall,trim,roof};
  const entrance=model.parts.find(p=>p.kind==='portal'&&p.visible);let canonical=[[[...SITE.building]]];
  for(const p of model.parts.filter(p=>p.visible&&p.kind==='volume'&&p.y===0))canonical=difference(canonical,rect(p.x,p.z,p.width,p.depth));
  // patio1.MOV 18.50–24.03 s shows an open porch here, not glazing.
- canonical=difference(canonical,rect(18.4,71.6,12.7,3.5));
+ canonical=difference(canonical,rearCalibrated?rect(15.52,PATIO_ESTIMATE.centerWall,39.78,9.8):rect(18.4,71.6,12.7,3.5));
  const front=entrance?Math.min(15.4,entrance.z-.12):0;
  const footprint=entrance?difference(canonical,rect(entrance.x-.08,front,entrance.width+.16,entrance.z+entrance.depth+.28-front)):canonical;
  g.add(solid(footprint,wall,11.15,11.15));
  // Rear masses stay tied to the original GIS trace; facade edits do not change paving quantities.
- for(const [x,z,w,d] of [[15.2,58.5,19,16.5],[33.8,50,22,15.5],[55.5,53.5,18.2,31.9]]){const p={...model.parts[0],kind:'hip' as const,width:w+1.3,depth:d+1.2,height:.3,rise:3.8};const r=roofMesh(p,local,model.roofDetail&&roofDetail);r.position.set(x-.65,11.5,z-.6);r.userData.roof=true;g.add(r)}
+ for(const [x,z,w,d] of (rearCalibrated?[[55.5,53.5,18.2,31.9]]:[[15.2,58.5,19,16.5],[33.8,50,22,15.5],[55.5,53.5,18.2,31.9]])){const p={...model.parts[0],kind:'hip' as const,width:w+1.3,depth:d+1.2,height:.3,rise:3.8};const r=roofMesh(p,local,model.roofDetail&&roofDetail);r.position.set(x-.65,11.5,z-.6);r.userData.roof=true;g.add(r)}
  for(const p of model.parts){if(!p.visible)continue;const node=new T.Group(),partMaterial=material(p.color);let visual:T.Object3D;
   if(p.kind==='volume')visual=block(0,0,0,p.width,p.height,p.depth,partMaterial);
   else if(p.kind==='gable'||p.kind==='hip'){const partRoof=local.roof.clone();partRoof.color.set(p.color);visual=roofMesh(p,{...local,roof:partRoof},model.roofDetail&&roofDetail);visual.userData.roof=true}
@@ -108,6 +157,7 @@ export function photoResidence(e:Element,m:Finish,roofs:boolean,model:FacadeMode
  // Skirting, horizontal string course, address numerals, drains and rear glazing.
  for(const [x,z,w] of [[9.33,28.74,14.3],[23.65,17.78,14.3],[44.9,14.5,28.9]]){g.add(block(x,2.2,z-.09,w,.16,.16,trim));g.add(block(x,10.1,z-.18,w,.2,.25,trim))}
  if(typeof document!=='undefined'){const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d')!;ctx.fillStyle='#665f51';ctx.font='70px Georgia';ctx.fillText('2331',8,90);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;const numbers=new T.Mesh(new T.PlaneGeometry(2.15,.54),new T.MeshBasicMaterial({map:t,transparent:true,side:T.DoubleSide}));numbers.position.set(27.4,1.8,16.38);g.add(numbers)}
+ if(rearCalibrated)g.add(estimatedRearArchitecture(local,model.parts[0],model.roofDetail&&roofDetail));else{
  for(const [x,z,w] of [[40,65.5,12],[60,85.5,11.8]]){const p={...model.parts[0],width:w,height:7.2,depth:.35,columns:4,rows:2,arch:'rect' as const};const o=windowMesh(p,local);o.position.set(x+w,2,z);o.rotation.y=Math.PI;g.add(o)}
  // Video-confirmed railing form; all dimensions remain photo estimates.
  const porch=new T.Group();porch.name='video-rear-veranda';porch.userData.evidence='patio1.MOV 18.50–24.03 s';
@@ -126,6 +176,7 @@ export function photoResidence(e:Element,m:Finish,roofs:boolean,model:FacadeMode
  const rearBay={...model.parts[0],width:13.3,height:7.25,depth:1.15,y:1.6,columns:3,rows:2,arch:'rect' as const};
  const rear=bayMesh(rearBay,local);rear.position.set(50.6,0,65.55);rear.rotation.y=Math.PI;g.add(rear);
  g.add(block(34.5,10.7,65.35,20.9,.2,.28,trim));
+ }
  g.traverse(o=>{if(o.userData.roof)o.visible=roofs});
  const root=new T.Group();g.position.set(-9.33,0,-14.565);root.add(g);root.scale.set(e.width/64.503,e.height/30,e.depth/70.83);root.position.set(e.x,e.elevation,e.z);root.rotation.y=-e.rotation*Math.PI/180;
  if(e.rotation){root.position.set(e.x+e.width/2,e.elevation,e.z+e.depth/2);g.position.set(-9.33-64.503/2,0,-14.565-70.83/2)}return root;

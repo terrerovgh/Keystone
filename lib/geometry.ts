@@ -10,6 +10,7 @@ export function ringFor(e:Element):Ring {
   let points:Point[];
   if(e.shape==='ellipse')points=Array.from({length:64},(_,i)=>{const a=i/64*Math.PI*2;return [e.width/2+Math.cos(a)*e.width/2,e.depth/2+Math.sin(a)*e.depth/2]});
   else if(e.shape==='polygon'&&e.points)points=e.points;
+  else if(e.kind==='stairs'&&e.style==='house-descent'){const b=Math.min(1.6,e.width*.12,e.depth*.8);points=[[0,0],[e.width,0],[e.width,e.depth-b],[e.width-b,e.depth],[b,e.depth],[0,e.depth-b]];}
   else points=[[0,0],[e.width,0],[e.width,e.depth],[0,e.depth]];
   const r=points.map(p=>{const t=rotate([p[0]-e.width/2,p[1]-e.depth/2],e.rotation);return [e.x+e.width/2+t[0],e.z+e.depth/2+t[1]] as Point});
   return [...r,r[0]];
