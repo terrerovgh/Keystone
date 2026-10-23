@@ -2,6 +2,10 @@
 
 Aplicación privada en español para el frente y el patio de 2331 Keystone Blvd, North Miami. Incluye dos propuestas sobre base GIS y conserva las anteriores, edición 2D/3D, materiales, presupuesto, versiones, registro de medidas y expediente PDF.
 
+## Guías para desarrolladores y agentes
+
+Empieza por [`AGENTS.md`](AGENTS.md) y el índice de [`docs/`](docs/index.md). Allí están la arquitectura, el modelo de geometría compartida, la instalación y comandos, las fuentes y límites de precisión, y las reglas de publicación/seguridad. `CLAUDE.md` enlaza esas mismas instrucciones para Claude Code. Para OpenCode, Codex y agentes con soporte de `AGENTS.md`, la guía raíz es el punto de entrada; en otros agentes, indica que lean `AGENTS.md` y las guías de `docs/` antes de editar.
+
 ## Uso
 
 1. Elegir Curvas · base GIS o Rectas · base GIS y la zona Frente o Patio.
