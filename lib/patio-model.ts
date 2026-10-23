@@ -1,7 +1,7 @@
 import * as T from 'three';
 import type { Element } from './project';
 import { bounds, difference, intersection, polyFor, rect, visibleFootprint, type MultiPolygon } from './geometry';
-import { block, solid, type Finish } from './scene-models';
+import { block, solid, planting, type Finish } from './scene-models';
 
 /** Visual details follow the editable plan; no photo detail changes quantities. */
 export function deckSurface(polys:MultiPolygon,m:Finish,top:number,e?:Element,axis:'x'|'z'='x') {
@@ -128,15 +128,17 @@ export function videoPlantingPocket(elements:Element[],m:Finish){
 }
 
 export function videoPlanting(e:Element,elements:Element[],m:Finish){
-  const footprint=visibleFootprint(e,elements),g=solid(footprint,m.soil,.12,e.elevation+.01),b=bounds(footprint),vertices:number[]=[],colors:number[]=[];
+  const footprint=visibleFootprint(e,elements),g=planting(e,elements,m),b=bounds(footprint),vertices:number[]=[],colors:number[]=[];
   const inside=(x:number,z:number)=>footprint.some(pg=>{
     const contains=(ring:number[][])=>{let hit=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++)if((ring[i][1]>z)!==(ring[j][1]>z)&&x<(ring[j][0]-ring[i][0])*(z-ring[i][1])/(ring[j][1]-ring[i][1])+ring[i][0])hit=!hit;return hit};
     return contains(pg[0])&&!pg.slice(1).some(contains);
   });
   let seed=0;
-  for(let x=b.x+.6;x<b.maxX;x+=1.8)for(let z=b.z+.6;z<b.maxZ;z+=1.8){if(!inside(x,z))continue;const tall=e.id==='back-garden',height=tall?5.3:2.8;
+  for(let x=b.x+.6;x<b.maxX;x+=1.8)for(let z=b.z+.6;z<b.maxZ;z+=1.8){if(!inside(x,z))continue;const tall=e.id==='back-garden',height=(tall?5.3:2.8)*(.75+(seed%7)/24);
     for(let f=0;f<9;f++){
       const angle=f*2.399+seed*.4,dir=new T.Vector3(Math.cos(angle),0,Math.sin(angle)),side=new T.Vector3(-dir.z,0,dir.x),reach=tall?2.5:1.7;
+      const stemPoints=Array.from({length:9},(_,j)=>{const t=j/8;return new T.Vector3(x+dir.x*reach*t,e.elevation+.15+height*Math.sin(t*Math.PI*.67),z+dir.z*reach*t)});
+      const stem=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(stemPoints),8,.018,4,false),m.leaf);stem.castShadow=true;g.add(stem);
       for(let i=1;i<22;i++){
         const t=i/22,point=new T.Vector3(x+dir.x*reach*t,e.elevation+.15+height*Math.sin(t*Math.PI*.67),z+dir.z*reach*t),length=Math.sin(t*Math.PI)*.6;
         for(const sign of [-1,1]){
