@@ -64,3 +64,11 @@ El proyecto abre ahora en Patio. La vista 3D incorpora un vaso abierto de piscin
 El panel del patio incluye las lecturas 37, 16, 27, 50, 4, 5 y 15 × 5 pies del croquis, conservando las ambigüedades de extremos. El desglose y CSV calculan cada lado desde la geometría activa, con coordenadas completas, pulgadas y origen; no elevan estimaciones a medidas comprobadas. El editor pasa a incrementos de una pulgada y presenta equivalencias en pulgadas.
 
 Render hiperrealista es una imagen conceptual fija generada con ImageGen a partir de las tres fotografías del propietario, el croquis y la ortofoto. Representa losas de referencia de 48 × 48 pulgadas con juntas verdes de 6 pulgadas, piscina y muelle conservados. No se regenera al editar el plano y no es una medición. Su prompt y trazabilidad se conservan junto al archivo en `public/renders/`. La vista aérea oblicua se revisó como referencia adicional del modelo.
+
+### Revisión del patio con los videos del propietario
+
+Se revisaron `patio1.MOV` (29.40 s) y `patio2.mov` (7.27 s), aplicando su orientación de reproducción y extrayendo fotogramas con AVFoundation. Los originales se conservan en el directorio del proyecto y no se publican. En `public/references/patio-video/` se incluyen fotogramas, hojas de contacto y un manifiesto de procedencia con tiempos y huellas SHA-256.
+
+El modelo corrige la escalinata de azulejo azul de ancho completo dentro del vaso, el porche con murete y barandilla horizontal en lugar del ventanal supuesto, la barbacoa sobre apoyos de piedra con hueco inferior, la madera envejecida con testas, los bancos integrados y la dirección perpendicular del muelle. El estado actual muestra un remate visual alrededor de la palma. Los detalles se anclan a los elementos existentes y siguen sus posiciones; no cambian contornos guardados, cantidades o medidas verificadas. Tamaños y niveles de los detalles siguen estimados: no se hizo fotogrametría ni calibración métrica.
+
+El patio abre en Vista 3D. Las cámaras «Video 1 · escalones de piscina», «Video 1 · porche y barandilla» y «Video 2 · bancos y muelle» enlazan el modelo con fotogramas de referencia. El panel conserva siete observaciones con archivo, segundo y descripción del ajuste. La imagen hiperrealista v1 se conserva identificada como anterior a esta revisión de videos.

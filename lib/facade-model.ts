@@ -83,11 +83,13 @@ export function photoResidence(e:Element,m:Finish,roofs:boolean,model:FacadeMode
  const g=new T.Group(),wall=m.wall.clone(),trim=m.trim.clone(),roof=m.roof.clone();wall.color.set(model.wallColor);trim.color.set(model.trimColor);roof.color.set(model.roofColor);const local={...m,wall,trim,roof};
  const entrance=model.parts.find(p=>p.kind==='portal'&&p.visible);let canonical=[[[...SITE.building]]];
  for(const p of model.parts.filter(p=>p.visible&&p.kind==='volume'&&p.y===0))canonical=difference(canonical,rect(p.x,p.z,p.width,p.depth));
+ // patio1.MOV 18.50–24.03 s shows an open porch here, not glazing.
+ canonical=difference(canonical,rect(18.4,71.6,12.7,3.5));
  const front=entrance?Math.min(15.4,entrance.z-.12):0;
  const footprint=entrance?difference(canonical,rect(entrance.x-.08,front,entrance.width+.16,entrance.z+entrance.depth+.28-front)):canonical;
  g.add(solid(footprint,wall,11.15,11.15));
  // Rear masses stay tied to the original GIS trace; facade edits do not change paving quantities.
- for(const [x,z,w,d] of [[15.2,58.5,19,16.5],[33.8,50,22,15.5],[55.5,53.5,18.2,31.9]]){const p={...model.parts[0],kind:'hip' as const,width:w+1.3,depth:d+1.2,rise:3.8};const r=roofMesh(p,local,model.roofDetail&&roofDetail);r.position.set(x-.65,11.5,z-.6);r.userData.roof=true;g.add(r)}
+ for(const [x,z,w,d] of [[15.2,58.5,19,16.5],[33.8,50,22,15.5],[55.5,53.5,18.2,31.9]]){const p={...model.parts[0],kind:'hip' as const,width:w+1.3,depth:d+1.2,height:.3,rise:3.8};const r=roofMesh(p,local,model.roofDetail&&roofDetail);r.position.set(x-.65,11.5,z-.6);r.userData.roof=true;g.add(r)}
  for(const p of model.parts){if(!p.visible)continue;const node=new T.Group(),partMaterial=material(p.color);let visual:T.Object3D;
   if(p.kind==='volume')visual=block(0,0,0,p.width,p.height,p.depth,partMaterial);
   else if(p.kind==='gable'||p.kind==='hip'){const partRoof=local.roof.clone();partRoof.color.set(p.color);visual=roofMesh(p,{...local,roof:partRoof},model.roofDetail&&roofDetail);visual.userData.roof=true}
@@ -106,7 +108,19 @@ export function photoResidence(e:Element,m:Finish,roofs:boolean,model:FacadeMode
  // Skirting, horizontal string course, address numerals, drains and rear glazing.
  for(const [x,z,w] of [[9.33,28.74,14.3],[23.65,17.78,14.3],[44.9,14.5,28.9]]){g.add(block(x,2.2,z-.09,w,.16,.16,trim));g.add(block(x,10.1,z-.18,w,.2,.25,trim))}
  if(typeof document!=='undefined'){const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d')!;ctx.fillStyle='#665f51';ctx.font='70px Georgia';ctx.fillText('2331',8,90);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;const numbers=new T.Mesh(new T.PlaneGeometry(2.15,.54),new T.MeshBasicMaterial({map:t,transparent:true,side:T.DoubleSide}));numbers.position.set(27.4,1.8,16.38);g.add(numbers)}
- for(const [x,z,w] of [[18.4,75.11,12.7],[40,65.5,12],[60,85.5,11.8]]){const p={...model.parts[0],width:w,height:7.2,depth:.35,columns:4,rows:2,arch:'rect' as const};const o=windowMesh(p,local);o.position.set(x+w,2,z);o.rotation.y=Math.PI;g.add(o)}
+ for(const [x,z,w] of [[40,65.5,12],[60,85.5,11.8]]){const p={...model.parts[0],width:w,height:7.2,depth:.35,columns:4,rows:2,arch:'rect' as const};const o=windowMesh(p,local);o.position.set(x+w,2,z);o.rotation.y=Math.PI;g.add(o)}
+ // Video-confirmed railing form; all dimensions remain photo estimates.
+ const porch=new T.Group();porch.name='video-rear-veranda';porch.userData.evidence='patio1.MOV 18.50–24.03 s';
+ porch.add(block(18.4,.9,71.6,12.7,.15,3.4,local.paver));
+ porch.add(block(15.523,-.08,75.03,18.45,.09,1.02,local.wood));
+ porch.add(block(18.4,0,74.95,12.7,2.65,.22,local.wall));
+ porch.add(block(18.32,2.6,74.88,12.86,.12,.36,local.paver));
+ for(const x of [18.4,30.7])porch.add(block(x,2.65,74.94,.4,8.5,.4,trim));
+ for(let y=3.05;y<7.9;y+=.8)porch.add(block(18.8,y,75.04,11.9,.09,.1,trim));
+ for(const x of [22.8,26.8])porch.add(block(x,2.75,75.04,.075,5.25,.09,trim));
+ const reedMat=material('#b6a78d');
+ for(let i=0;i<24;i++){const reed=new T.Mesh(new T.CylinderGeometry(.025,.035,6.2+(i%3)*.06,5),reedMat);reed.position.set(16.0+i*.095,3.1,75.06);reed.castShadow=true;porch.add(reed)}
+ g.add(porch);
  // The central rear opening and terracotta landing are visible in the owner's aerial image.
  // Depth and opening proportions are visual estimates; the GIS footprint remains unchanged.
  const rearBay={...model.parts[0],width:13.3,height:7.25,depth:1.15,y:1.6,columns:3,rows:2,arch:'rect' as const};

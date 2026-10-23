@@ -1,3 +1,4 @@
+import { PATIO_VIDEO_REVIEW } from './patio-video';
 import type { Element } from './project';
 import { edgeDimensions } from './engineering';
 import { feetLabel } from './site-reference';
@@ -9,6 +10,7 @@ export const patioReferences = [
   {path:'/photos/croquis-patio.jpg',label:'Croquis original · cotas del patio'},
   {path:'/references/ortofoto-oficial.png',label:'Ortofoto oficial · distribución general'},
   {path:'/photos/aerea-patio.png',label:'Vista aérea oblicua · cubiertas y terraza'},
+  ...PATIO_VIDEO_REVIEW.observations.map(o=>({path:o.frame,label:`${o.file} · ${o.seconds.toFixed(2)} s · ${o.title}`})),
 ];
 export const PATIO_CONTROLS = [
   {label:'Lado del croquis junto a piscina',value:'37′ = 444″',source:'Croquis',use:'Cota legible. Orientación y extremos sobre la huella actual pendientes; no se fuerza el perímetro GIS a esta longitud.'},

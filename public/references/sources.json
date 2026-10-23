@@ -76,5 +76,24 @@
       "Diferencia entre huella GIS 2015 y obra actual"
     ],
     "notes": "El croquis controla las longitudes conocidas. Fotos y ortofoto orientan ubicación y forma; no confirman medidas de campo."
+  },
+  "patioVideoReview": {
+    "date": "2026-10-23",
+    "videos": [
+      "patio1.MOV",
+      "patio2.mov"
+    ],
+    "durationsSeconds": [
+      29.398333333333333,
+      7.265
+    ],
+    "evidenceManifest": "/references/patio-video/provenance.json",
+    "observations": [
+      "Escalinata azul a lo ancho del extremo de piscina junto a casa",
+      "Porche con murete blanco y barandilla horizontal",
+      "Apoyos de piedra y hueco bajo la barbacoa",
+      "Bancos integrados, hueco de palma y transición perpendicular al muelle"
+    ],
+    "accuracy": "Observación visual con fotogramas fechados por tiempo de video. Sin escala métrica ni reconstrucción fotogramétrica. No se alteran contornos ni cotas guardadas."
   }
 }

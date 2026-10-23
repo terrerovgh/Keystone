@@ -1,0 +1,90 @@
+{
+  "reviewDate": "2026-10-23",
+  "source": "Videos grabados y proporcionados por el propietario",
+  "method": "Fotogramas AVFoundation, orientación de reproducción aplicada. No se realizó reconstrucción fotogramétrica ni calibración métrica.",
+  "originalVideosPublished": false,
+  "videos": [
+    {
+      "file": "patio1.MOV",
+      "sha256": "1bbab57a7a50fc07bda94f4cee4fd911a668dbeb44a2056804761d52cdfa6a61",
+      "durationSeconds": 29.398333333333333,
+      "fps": 30.00170135498047,
+      "encodedWidth": 1920,
+      "encodedHeight": 1080,
+      "displayOrientation": "portrait, 90 degrees",
+      "selectedFrames": [
+        {
+          "actualSeconds": 1.9666666666666666,
+          "path": "tmp/patio-video/patio1-002.0.jpg",
+          "requestedSeconds": 1.9873958333333333
+        },
+        {
+          "actualSeconds": 9.333333333333334,
+          "path": "tmp/patio-video/patio1-009.3.jpg",
+          "requestedSeconds": 9.336979166666667
+        },
+        {
+          "actualSeconds": 11.166666666666666,
+          "path": "tmp/patio-video/patio1-011.2.jpg",
+          "requestedSeconds": 11.174375
+        },
+        {
+          "actualSeconds": 16.665,
+          "path": "tmp/patio-video/patio1-016.7.jpg",
+          "requestedSeconds": 16.6865625
+        },
+        {
+          "actualSeconds": 18.498333333333335,
+          "path": "tmp/patio-video/patio1-018.5.jpg",
+          "requestedSeconds": 18.523958333333333
+        },
+        {
+          "actualSeconds": 24.031666666666666,
+          "path": "tmp/patio-video/patio1-024.0.jpg",
+          "requestedSeconds": 24.036145833333332
+        },
+        {
+          "actualSeconds": 25.865,
+          "path": "tmp/patio-video/patio1-025.9.jpg",
+          "requestedSeconds": 25.873541666666668
+        },
+        {
+          "actualSeconds": 27.698333333333334,
+          "path": "tmp/patio-video/patio1-027.7.jpg",
+          "requestedSeconds": 27.7109375
+        }
+      ]
+    },
+    {
+      "file": "patio2.mov",
+      "sha256": "1e9eb50d03dab031e3b8dc6d4f8fa14a32d582dba00e5cdb411d76b5cd57d135",
+      "durationSeconds": 7.265,
+      "fps": 30,
+      "encodedWidth": 1920,
+      "encodedHeight": 1080,
+      "displayOrientation": "portrait, 90 degrees",
+      "selectedFrames": [
+        {
+          "actualSeconds": 2.1333333333333333,
+          "path": "tmp/patio-video/patio2-002.1.jpg",
+          "requestedSeconds": 2.15
+        },
+        {
+          "actualSeconds": 3.2,
+          "path": "tmp/patio-video/patio2-003.1.jpg",
+          "requestedSeconds": 3.15
+        },
+        {
+          "actualSeconds": 4.133333333333334,
+          "path": "tmp/patio-video/patio2-004.2.jpg",
+          "requestedSeconds": 4.15
+        },
+        {
+          "actualSeconds": 7.133333333333334,
+          "path": "tmp/patio-video/patio2-007.2.jpg",
+          "requestedSeconds": 7.15
+        }
+      ]
+    }
+  ]
+}
