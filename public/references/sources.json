@@ -165,5 +165,14 @@
         "use": "Contraste del frente revisado: miradores, portal, cubiertas y jardín."
       }
     ]
+  },
+  "frontAlignment": {
+    "edition": 1,
+    "ownerCorrection": "Medialuna centrada respecto al óvalo de los accesos y dividida por el camino recto hasta la puerta central. Plano y 3D deben coincidir al editar.",
+    "sketchWidthFeet": 25,
+    "designDepthFeet": 9.5,
+    "designPathWidthFeet": 4,
+    "accuracy": "La anchura de 25 ft procede del croquis. Fondo, camino, perfiles y alturas de escalones son estimaciones de diseño, no cotas de campo.",
+    "implementation": "Una geometría compartida para contornos, recortes y escalones. Nueva alternativa reversible que conserva las anteriores y el patio."
   }
 }

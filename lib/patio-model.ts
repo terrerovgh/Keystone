@@ -1,6 +1,6 @@
 import * as T from 'three';
 import type { Element } from './project';
-import { bounds, difference, intersection, polyFor, rect, visibleFootprint, type MultiPolygon } from './geometry';
+import { bounds, difference, intersection, polyFor, rect, visibleFootprint, stairTreads, type MultiPolygon } from './geometry';
 import { block, solid, planting, type Finish } from './scene-models';
 
 /** Visual details follow the editable plan; no photo detail changes quantities. */
@@ -56,11 +56,8 @@ export function photoPool(e:Element,m:Finish,woodCoping:boolean) {
 }
 
 export function photoSteps(e:Element,m:Finish) {
-  const g=new T.Group(),dock=e.style==='dock-descent',count=dock?2:e.style==='house-descent'?4:3,tile=(dock?m.wood:m.paver).clone();if(!dock)tile.color.set('#c28b70');
-  for(let i=0;i<count;i++){const inset=dock?0:i*.35,z=e.z,w=e.width-inset*2,depth=e.depth*(count-i)/count,bevel=dock?0:Math.min(e.style==='house-descent'?1.6:1.1,w*.12,depth*.8),x=e.x+inset;
-    const ring:[number,number][] = bevel?[[x,z],[x+w,z],[x+w,z+depth-bevel],[x+w-bevel,z+depth],[x+bevel,z+depth],[x,z+depth-bevel]]:[[x,z],[x+w,z],[x+w,z+depth],[x,z+depth]];
-    const stair=solid([[ring]],tile,e.height*(i+1)/count,e.elevation+e.height*(i+1)/count);stair.name=`${dock?'dock':'house'}-tread-${i+1}`;g.add(stair);
-  }return g;
+ const g=new T.Group(),dock=e.style==='dock-descent',tile=(dock?m.wood:m.paver).clone();if(!dock)tile.color.set('#c28b70');
+ stairTreads(e).forEach((tier,i)=>{const stair=solid(tier.polygon,tile,tier.top-tier.bottom,tier.top);stair.name=`${dock?'dock':'house'}-tread-${i+1}`;g.add(stair)});return g;
 }
 
 export function photoFurniture(e:Element,m:Finish,blueChair=false) {

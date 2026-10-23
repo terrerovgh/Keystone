@@ -42,6 +42,10 @@ export function footprint(elements:Element[],zone:Zone){
 }
 export function demolitionFor(existing:Element[],proposed:Element[],zone:Zone){return difference(footprint(existing,zone).net,union(proposed.filter(e=>['paving','path'].includes(e.kind)&&e.action==='conservar').map(polyFor)))}
 export function visibleFootprint(e:Element,elements:Element[]){
+ if(['paving','path'].includes(e.kind)){
+  const fp=footprint(elements,e.zone),later=elements.slice(elements.findIndex(v=>v.id===e.id)+1).filter(v=>v.zone===e.zone&&v.kind===e.kind&&v.action!=='retirar');
+  return difference(intersection(polyFor(e),e.kind==='path'?fp.paths:fp.paving),union(later.map(polyFor)));
+ }
  const hard=union(elements.filter(x=>x.id!==e.id&&x.action!=='retirar'&&['pool','house','dock','stairs','fixed'].includes(x.kind)).map(polyFor));
  return e.kind==='garden'?difference(polyFor(e),union([hard,...elements.filter(x=>x.kind==='path'&&x.action!=='retirar').map(polyFor)])):polyFor(e);
 }
@@ -84,4 +88,15 @@ export function turfRolls(cuts:MultiPolygon[],rollWidth:number,rollLength:number
   const bins:number[]=[];for(const shelf of [...shelves].sort((a,b)=>b.l-a.l)){const i=bins.findIndex(b=>b+shelf.l<=rollLength+1e-8);if(i<0)bins.push(shelf.l);else bins[i]+=shelf.l}
   const reserve=cutLinear*waste/100;let left=reserve;for(let i=0;i<bins.length&&left>0;i++){const used=Math.min(rollLength-bins[i],left);bins[i]+=used;left-=used}while(left>1e-8){const use=Math.min(rollLength,left);bins.push(use);left-=use}
   return {linear,area:linear*rollWidth,rolls:bins.length,pieces:pieces.length,cutLinear,wholeRollArea:bins.length*rollWidth*rollLength,packing:bins};
+}
+
+/** Exact horizontal profile for each tier, used by both footprint and renderer. */
+export function stairTreads(e:Element){
+ const front=e.zone==='front',count=front?3:e.style==='dock-descent'?2:e.style==='house-descent'?4:3,base=polyFor(e);
+ return Array.from({length:count},(_,i)=>{
+  const inset=front||e.style==='dock-descent'?0:i*.35,depth=e.depth*(count-i)/count;
+  const local=rect(inset,front?e.depth-depth:0,Math.max(.1,e.width-inset*2),depth);
+  const world=mapPoly(local,([x,z])=>{const p=rotate([x-e.width/2,z-e.depth/2],e.rotation);return [e.x+e.width/2+p[0],e.z+e.depth/2+p[1]]});
+  return {polygon:intersection(base,world),top:e.elevation+e.height*(i+1)/count,bottom:e.elevation};
+ });
 }

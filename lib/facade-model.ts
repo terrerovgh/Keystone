@@ -3,6 +3,7 @@ import { block, solid, type Finish } from './scene-models';
 import { difference, rect } from './geometry';
 import { SITE } from './site-reference';
 import { createFacade,resolveFacade, type FacadeModel, type FacadePart } from './facade';
+import { canonicalWalls } from './residence-geometry';
 import { PATIO_ESTIMATE } from './patio-estimate';
 import type { Element } from './project';
 
@@ -127,15 +128,10 @@ function estimatedRearArchitecture(m:Finish,template:FacadePart,detail:boolean){
  const side=windowMesh({...french,width:3,columns:1},m);side.position.set(55.26,level,73.6);side.rotation.y=-Math.PI/2;g.add(side);
  return g;
 }
-export function photoResidence(e:Element,m:Finish,roofs:boolean,model:FacadeModel=createFacade(),selected?:string|null,roofDetail=true,rearCalibrated=false){
+export function photoResidence(e:Element,m:Finish,roofs:boolean,model:FacadeModel=createFacade(),selected?:string|null,roofDetail=true,rearCalibrated=false,frontSteps=true){
  model=resolveFacade(model);
  const g=new T.Group(),wall=m.wall.clone(),trim=m.trim.clone(),roof=m.roof.clone();wall.color.set(model.wallColor);trim.color.set(model.trimColor);roof.color.set(model.roofColor);const local={...m,wall,trim,roof};
- const entrance=model.parts.find(p=>p.kind==='portal'&&p.visible);let canonical=[[[...SITE.building]]];
- for(const p of model.parts.filter(p=>p.visible&&p.kind==='volume'&&p.y===0))canonical=difference(canonical,rect(p.x,p.z,p.width,p.depth));
- // patio1.MOV 18.50–24.03 s shows an open porch here, not glazing.
- canonical=difference(canonical,rearCalibrated?rect(15.52,PATIO_ESTIMATE.centerWall,39.78,9.8):rect(18.4,71.6,12.7,3.5));
- const front=entrance?Math.min(15.4,entrance.z-.12):0;
- const footprint=entrance?difference(canonical,rect(entrance.x-.08,front,entrance.width+.16,entrance.z+entrance.depth+.28-front)):canonical;
+ const entrance=model.parts.find(p=>p.kind==='portal'&&p.visible),footprint=canonicalWalls(model,rearCalibrated);
  g.add(solid(footprint,wall,11.15,11.15));
  // Rear masses stay tied to the original GIS trace; facade edits do not change paving quantities.
  for(const [x,z,w,d] of (rearCalibrated?[[55.5,53.5,18.2,31.9]]:[[15.2,58.5,19,16.5],[33.8,50,22,15.5],[55.5,53.5,18.2,31.9]])){const p={...model.parts[0],kind:'hip' as const,width:w+1.3,depth:d+1.2,height:.3,rise:3.8};const r=roofMesh(p,local,model.roofDetail&&roofDetail);r.position.set(x-.65,11.5,z-.6);r.userData.roof=true;g.add(r)}
@@ -153,7 +149,7 @@ export function photoResidence(e:Element,m:Finish,roofs:boolean,model:FacadeMode
   node.add(visual);node.position.set(p.x,p.y,p.z);node.rotation.y=p.rotation*Math.PI/180;node.userData.facadeId=p.id;g.add(node);
   if(p.id===selected){const box=new T.BoxHelper(visual,'#d19e4f');box.material.depthTest=false;box.renderOrder=9;node.add(box)}
  }
- if(entrance){for(let i=0;i<3;i++){const x=entrance.x-.12,w=entrance.width+.24,z=entrance.z-3.2+i*1.06,back=entrance.z+.08,ring:[number,number][]=[[x,back],[x+w,back],[x+w,z+.28],...Array.from({length:25},(_,j)=>{const t=j/24;return [x+w*(1-t),z+.28-.28*Math.sin(Math.PI*t)] as [number,number]})];g.add(solid([[ring]],local.pool,entrance.y*(i+1)/3,entrance.y*(i+1)/3))}}
+ if(entrance&&frontSteps){for(let i=0;i<3;i++){const x=entrance.x-.12,w=entrance.width+.24,z=entrance.z-3.2+i*1.06,back=entrance.z+.08,ring:[number,number][]=[[x,back],[x+w,back],[x+w,z+.28],...Array.from({length:25},(_,j)=>{const t=j/24;return [x+w*(1-t),z+.28-.28*Math.sin(Math.PI*t)] as [number,number]})];g.add(solid([[ring]],local.pool,entrance.y*(i+1)/3,entrance.y*(i+1)/3))}}
  // Skirting, horizontal string course, address numerals, drains and rear glazing.
  for(const [x,z,w] of [[9.33,28.74,14.3],[23.65,17.78,14.3],[44.9,14.5,28.9]]){g.add(block(x,2.2,z-.09,w,.16,.16,trim));g.add(block(x,10.1,z-.18,w,.2,.25,trim))}
  if(typeof document!=='undefined'){const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d')!;ctx.fillStyle='#665f51';ctx.font='70px Georgia';ctx.fillText('2331',8,90);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;const numbers=new T.Mesh(new T.PlaneGeometry(2.15,.54),new T.MeshBasicMaterial({map:t,transparent:true,side:T.DoubleSide}));numbers.position.set(27.4,1.8,16.38);g.add(numbers)}

@@ -59,7 +59,7 @@ La referencia de fachada edición 2 centra puerta, torre, óculo y escalones sig
 
 ### Patio: fotografías, visualización y cotas
 
-El proyecto abre ahora en Patio. La vista 3D incorpora un vaso abierto de piscina con agua y coronación, juntas de deck, mobiliario de referencia y escalones descendentes hacia el canal. Se corrige una profundidad de ventanales posteriores que heredaba el fondo del cuerpo de la casa y obstruía la terraza. Se añaden cámaras de piscina, comedor, terraza, muelle y fachada posterior, con fotos, croquis y ortofoto junto al modelo.
+La revisión del patio incorpora cámaras dedicadas. La vista 3D incorpora un vaso abierto de piscina con agua y coronación, juntas de deck, mobiliario de referencia y escalones descendentes hacia el canal. Se corrige una profundidad de ventanales posteriores que heredaba el fondo del cuerpo de la casa y obstruía la terraza. Se añaden cámaras de piscina, comedor, terraza, muelle y fachada posterior, con fotos, croquis y ortofoto junto al modelo.
 
 El panel del patio incluye las lecturas 37, 16, 27, 50, 4, 5 y 15 × 5 pies del croquis, conservando las ambigüedades de extremos. El desglose y CSV calculan cada lado desde la geometría activa, con coordenadas completas, pulgadas y origen; no elevan estimaciones a medidas comprobadas. El editor pasa a incrementos de una pulgada y presenta equivalencias en pulgadas.
 
@@ -71,7 +71,7 @@ Se revisaron `patio1.MOV` (29.40 s) y `patio2.mov` (7.27 s), aplicando su orient
 
 El modelo corrige la escalinata de azulejo azul de ancho completo dentro del vaso, el porche con murete y barandilla horizontal en lugar del ventanal supuesto, la barbacoa sobre apoyos de piedra con hueco inferior, la madera envejecida con testas, los bancos integrados y la dirección perpendicular del muelle. El estado actual muestra un remate visual alrededor de la palma. Los detalles se anclan a los elementos existentes y siguen sus posiciones; no cambian contornos guardados, cantidades o medidas verificadas. Tamaños y niveles de los detalles siguen estimados: no se hizo fotogrametría ni calibración métrica.
 
-El patio abre en Vista 3D. Las cámaras «Video 1 · escalones de piscina», «Video 1 · porche y barandilla» y «Video 2 · bancos y muelle» enlazan el modelo con fotogramas de referencia. El panel conserva siete observaciones con archivo, segundo y descripción del ajuste. La imagen hiperrealista v1 se conserva identificada como anterior a esta revisión de videos.
+El patio dispone de Vista 3D. Las cámaras «Video 1 · escalones de piscina», «Video 1 · porche y barandilla» y «Video 2 · bancos y muelle» enlazan el modelo con fotogramas de referencia. El panel conserva siete observaciones con archivo, segundo y descripción del ajuste. La imagen hiperrealista v1 se conserva identificada como anterior a esta revisión de videos.
 
 ### Estimación aplicada del patio, casa y muelle
 
@@ -88,3 +88,12 @@ Las vistas exteriores de Apartments.com se incorporan al selector de referencias
 La pantalla inicial prioriza el modelo y mantiene el inspector cerrado. La alternativa activa se elige desde un único selector; las anteriores siguen disponibles. Las zonas, vistas y estado (actual / propuesta / retiros) se distinguen de los controles de edición. Referencias y medidas se consultan en una ventana independiente con pestañas.
 
 Seleccionar un elemento abre sus datos; en estado actual se muestran las medidas de su línea base y se ofrece pasar a la propuesta para editar. Las herramientas avanzadas y las opciones de vista se despliegan a demanda. Los menús cierran al pulsar fuera o Escape; las ventanas mantienen el foco de teclado y lo devuelven al control de origen. Presupuesto permite filtrar partidas por zona y guarda notas y fuentes bajo cada detalle. El registro de medidas y la configuración de cuadrilla se despliegan en Obra.
+
+
+## Plano y modelo coordinados
+
+La alternativa adicional «Frente · medialuna central» alinea el eje de la puerta, los escalones, el camino recto y el centro entre ambos accesos. Conserva las alternativas anteriores y la geometría del patio. La medialuna usa una única media elipse de 25 ft de ancho y 9 ft 6 in de fondo estimado; el camino de diseño de 4 ft corta su centro y produce dos islas iguales. Los dos accesos conservan las bocas de 12 × 10 ft y sus curvas, desplazadas simétricamente respecto a la puerta.
+
+Plano, inspector y arrastre 3D confirman cambios sobre los mismos elementos. Los recortes de camino y jardineras, la selección de pavimentos y los perfiles de escalones comparten geometría. La huella visible de los muros en el plano se deriva de los volúmenes de fachada que construyen el modelo; el límite GIS provisional para cantidades se conserva. Los contornos editados se normalizan sin desplazar sus vértices en coordenadas de proyecto, incluso al girarlos. Los cambios de ancho del camino y la medialuna conservan su eje; moverlos sigue siendo una edición explícita.
+
+La apertura inicial vuelve a Frente / Propuesta para revisar esta corrección. Anchos y perfiles de escalones, profundidad de medialuna y alturas siguen siendo estimaciones. La imagen conceptual fija de Render no se sincroniza; la vista 3D editable sí.
