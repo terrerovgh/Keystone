@@ -4,9 +4,10 @@ import { area, demolitionFor, bounds, footprint, mapPoly, pathData, polyFor, rec
 import { edgeDimensions } from '@/lib/engineering';
 import { feetLabel, referenceFrame, SITE } from '@/lib/site-reference';
 import { type Element, type Kind, type Point, type Proposal, type Zone } from '@/lib/project';
+import type { FacadeModel } from '@/lib/facade';
 export type Stage='proposed'|'existing'|'demolition';
 export type Tool='select'|'move'|'vertices'|'tile'|'pan'|'measure'|'draw';
-export interface ViewProps {proposal:Proposal;zone:Zone;stage:Stage;existing:Element[];data:Surface;selected:string|null;onSelect:(id:string|null)=>void;onChange:(id:string,patch:Partial<Element>)=>void;tool:Tool;dimensions:boolean;onTile:(id:string)=>void;onDraw?:(points:Point[],kind:Kind)=>boolean|void}
+export interface ViewProps {proposal:Proposal;zone:Zone;stage:Stage;existing:Element[];data:Surface;selected:string|null;onSelect:(id:string|null)=>void;onChange:(id:string,patch:Partial<Element>)=>void;tool:Tool;dimensions:boolean;onTile:(id:string)=>void;onDraw?:(points:Point[],kind:Kind)=>boolean|void;facade?:FacadeModel;facadeEditing?:boolean;selectedFacade?:string|null;onSelectFacade?:(id:string)=>void;onChangeFacade?:(id:string,patch:{x:number;z:number})=>void}
 export default function PlanView({proposal,zone,stage,existing,data,selected,onSelect,onChange,tool,dimensions,onTile,onDraw}:ViewProps){
  const svg=useRef<SVGSVGElement>(null),[zoom,setZoom]=useState(1),[pan,setPan]=useState<Point>([0,0]),[aerial,setAerial]=useState(false),[whole,setWhole]=useState(false),[numbers,setNumbers]=useState(false),[measure,setMeasure]=useState<Point[]>([]),[drawing,setDrawing]=useState<Point[]>([]),[drawKind,setDrawKind]=useState<Kind>('paving'),[preview,setPreview]=useState<Element|null>(null),[cursor,setCursor]=useState<Point|null>(null),[canvasSize,setCanvasSize]=useState<[number,number]>([800,500]);
  useEffect(()=>{const node=svg.current!;const observer=new ResizeObserver(()=>setCanvasSize([node.clientWidth,node.clientHeight]));observer.observe(node);return()=>observer.disconnect()},[]);

@@ -1,5 +1,6 @@
 import { validRing } from './engineering';
 import { withReferenceEdition, withFrontCalibration } from './site-reference';
+import { ensureFacade, validFacade, type FacadeModel } from './facade';
 export type Point = [number, number];
 export type Zone = 'front' | 'back';
 export type Kind = 'paving' | 'garden' | 'path' | 'pool' | 'house' | 'palm' | 'furniture' | 'dock' | 'stairs' | 'fixed';
@@ -25,6 +26,7 @@ export interface Rate { value: number | null; source: string; date: string; url?
 export interface Measure { id: string; label: string; value: string; source: Source; note: string }
 export interface Proposal { frontCalibration?:3; referenceEdition?: 2; baseline?: Element[]; id: string; name: string; description: string; elements: Element[]; settings: Settings; exceptions: Record<string, 'turf' | 'concrete'> }
 export interface Project {
+  facade?:FacadeModel;
   frontCalibration?:3; referenceEdition?: 2; schemaVersion: 1; title: string; address: string; activeId: string; proposals: Proposal[];
   existing: Element[];
   rates: Record<string, Rate>; measures: Measure[]; checklist: Record<string, boolean>; updatedAt: string;
@@ -102,8 +104,8 @@ export function createLegacyProject(): Project {
       {id:'m10',label:'Límites de propiedad',value:'Pendiente de survey',source:'Estimada',note:'El marco del modelo es visual; no define linderos legales.'},
     ],checklist:{},updatedAt:new Date().toISOString()};
 }
-export function createProject():Project{return withFrontCalibration(withReferenceEdition(createLegacyProject(),false),false)}
-export const upgradeProject=(p:Project)=>withFrontCalibration(withReferenceEdition(p,true),true);
+export function createProject():Project{return ensureFacade(withFrontCalibration(withReferenceEdition(createLegacyProject(),false),false))}
+export const upgradeProject=(p:Project)=>ensureFacade(withFrontCalibration(withReferenceEdition(p,true),true));
 export const baselineFor=(p:Project,v:Proposal)=>v.baseline??p.existing;
 export const activeProposal=(p:Project)=>p.proposals.find(x=>x.id===p.activeId)??p.proposals[0];
 export const fmt=(n:number,d=1)=>new Intl.NumberFormat('es-US',{maximumFractionDigits:d}).format(n);
@@ -111,6 +113,7 @@ export const usd=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',cur
 export function validProject(raw: unknown): raw is Project {
   if(!raw || typeof raw!=='object')return false;
   const p=raw as Project;
+  if(p.facade!==undefined&&!validFacade(p.facade))return false;
   const str=(s:unknown,max=250)=>typeof s==='string'&&s.length<=max;
   const finite=(n:unknown,min=-1000,max=1000)=>typeof n==='number'&&Number.isFinite(n)&&n>=min&&n<=max;
   const obj=(o:unknown)=>!!o&&typeof o==='object'&&!Array.isArray(o);
