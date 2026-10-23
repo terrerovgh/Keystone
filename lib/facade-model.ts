@@ -25,13 +25,13 @@ function windowMesh(p:FacadePart,m:Finish){m={...m,glass:m.glass.clone()};m.glas
  }
  if(arch!=='rect'){const base=arch==='fan'?0:Math.max(0,h-w/2);for(let i=1;i<5;i++){const a=i*Math.PI/5;g.add(tube([new T.Vector3(w/2,base,-.15),new T.Vector3(w/2+Math.cos(a)*w/2,base+Math.sin(a)*(h-base),-.15)],frame,.035))}}
  // Soft vertical highlights are geometry, with environment reflections from real glass.
- const reflection=new T.Mesh(new T.PlaneGeometry(w*.075,Math.max(.2,h*.7)),new T.MeshBasicMaterial({color:'#dfeceb',transparent:true,opacity:.13,depthWrite:false,side:T.DoubleSide}));reflection.position.set(w*.19,h*.43,-.1);g.add(reflection);
+ const reflection=new T.Mesh(new T.PlaneGeometry(w*.075,Math.max(.2,h*.7)),new T.MeshBasicMaterial({color:'#dfeceb',transparent:true,opacity:.13,depthWrite:false,side:T.DoubleSide}));reflection.position.set(w*.19,h*.43,-.1);g.add(reflection);g.scale.z=p.depth/.35;
  return g;
 }
 function bayMesh(p:FacadePart,m:Finish){const g=new T.Group(),w=p.width,d=p.depth,bevel=Math.min(w*.17,1.15),points:[[number,number],...Array<[number,number]>]=[[0,0],[bevel,-d],[w-bevel,-d],[w,0],[w,.1],[0,.1]];
  g.add(solid([[points]],m.wall,p.y,p.y));g.add(solid([[points]],m.trim,.14,p.y-.04));
  const faces=[[0,0,bevel,-d],[bevel,-d,w-bevel,-d],[w-bevel,-d,w,0]];
- for(const [a,b,c,dz] of faces){const width=Math.hypot(c-a,dz-b),f={...p,width:Math.max(.15,width-.08),columns:width>2?p.columns:1,arch:'rect' as const},win=windowMesh(f,m);win.position.set(a+.02,p.y,b-.035);win.rotation.y=-Math.atan2(dz-b,c-a);g.add(win)}
+ for(const [a,b,c,dz] of faces){const width=Math.hypot(c-a,dz-b),f={...p,width:Math.max(.15,width-.08),columns:width>2?p.columns:1,depth:.24,arch:'rect' as const},win=windowMesh(f,m);win.position.set(a+.02,p.y,b-.035);win.rotation.y=-Math.atan2(dz-b,c-a);g.add(win)}
  const band=solid([[points]],m.trim,.2,p.y+p.height+.22);g.add(band);return g;
 }
 type RoofFace=[T.Vector3,T.Vector3,T.Vector3,T.Vector3?];
@@ -76,7 +76,7 @@ function portalMesh(p:FacadePart,m:Finish){const g=new T.Group(),w=p.width,h=p.h
  g.add(block(.42,-.06,d-.4,w-.84,.12,.55,m.trim));
  return g;
 }
-function gateMesh(p:FacadePart,m:Finish){const g=new T.Group(),mat=material(p.color,.4),w=p.width,h=p.height;for(const x of [0,w-.14])g.add(block(x,0,0,.14,h,.16,mat));for(const y of [0,h-.13])g.add(block(0,y,0,w,.13,.16,mat));for(let i=1;i<p.columns;i++)g.add(block(i*w/p.columns,0,.04,.055,h,.055,mat));for(let i=1;i<p.rows;i++)g.add(block(0,i*h/p.rows,0,w,.085,.13,mat));g.add(block(w-.35,h*.48,-.1,.2,.08,.22,m.dark));return g}
+function gateMesh(p:FacadePart,m:Finish){const g=new T.Group(),mat=material(p.color,.4),w=p.width,h=p.height;for(const x of [0,w-.14])g.add(block(x,0,0,.14,h,.16,mat));for(const y of [0,h-.13])g.add(block(0,y,0,w,.13,.16,mat));for(let i=1;i<p.columns;i++)g.add(block(i*w/p.columns,0,.04,.055,h,.055,mat));for(let i=1;i<p.rows;i++)g.add(block(0,i*h/p.rows,0,w,.085,.13,mat));g.add(block(w-.35,h*.48,-.1,.2,.08,.22,m.dark));g.scale.z=p.depth/.18;return g}
 export function photoResidence(e:Element,m:Finish,roofs:boolean,model:FacadeModel=createFacade(),selected?:string|null,roofDetail=true){
  const g=new T.Group(),wall=m.wall.clone(),trim=m.trim.clone(),roof=m.roof.clone();wall.color.set(model.wallColor);trim.color.set(model.trimColor);roof.color.set(model.roofColor);const local={...m,wall,trim,roof};
  const entrance=model.parts.find(p=>p.kind==='portal'&&p.visible),canonical=[[SITE.building]];
@@ -92,7 +92,7 @@ export function photoResidence(e:Element,m:Finish,roofs:boolean,model:FacadeMode
   else if(p.kind==='portal')visual=portalMesh(p,local);
   else if(p.kind==='canopy')visual=canopyMesh(p,local);
   else if(p.kind==='gate')visual=gateMesh(p,local);
-  else if(p.kind==='oculus'){const o=new T.Group(),glass=new T.Mesh(new T.CircleGeometry(1,48),local.glass);glass.scale.set(p.width/2-.12,p.height/2-.12,1);glass.position.set(p.width/2,p.height/2,-.04);o.add(glass);const ring=new T.Mesh(new T.TorusGeometry(1,.1,10,64),trim);ring.scale.set(p.width/2,p.height/2,1);ring.position.set(p.width/2,p.height/2,-.13);ring.castShadow=true;o.add(ring);visual=o}
+  else if(p.kind==='oculus'){const o=new T.Group(),glass=new T.Mesh(new T.CircleGeometry(1,48),local.glass);glass.scale.set(p.width/2-.12,p.height/2-.12,1);glass.position.set(p.width/2,p.height/2,-.04);o.add(glass);const ring=new T.Mesh(new T.TorusGeometry(1,.1,10,64),trim);ring.scale.set(p.width/2,p.height/2,p.depth/.2);ring.position.set(p.width/2,p.height/2,-.13);ring.castShadow=true;o.add(ring);visual=o}
   else if(p.kind==='vent'){const o=new T.Group();o.add(block(0,0,0,p.width,p.height,p.depth,partMaterial));for(let y=.08;y<p.height;y+=.15)o.add(block(0,y,-.06,p.width,.035,.08,local.dark));visual=o}
   else visual=block(0,0,0,p.width,p.height,p.depth,partMaterial);
   node.add(visual);node.position.set(p.x,p.y,p.z);node.rotation.y=p.rotation*Math.PI/180;node.userData.facadeId=p.id;g.add(node);
