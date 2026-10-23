@@ -28,7 +28,7 @@ export function createFacade():FacadeModel{return {version:1,wallColor:'#d8cfbc'
  part('central-upper','Cuerpo central adelantado','center','volume',23.6,11.15,17.85,26.2,10.85,33,{color:'#e8dfcf'}),
  part('central-roof','Techo principal adelantado','center','gable',22.9,22.25,17.18,27.6,.32,34.65,{rise:7.4}),
  part('central-fan','Fanal semicircular superior','center','window',32.5,17.9,17.68,7.6,3.8,.32,{arch:'fan',columns:1,rows:1}),
- part('central-bay','Mirador central · tres caras','center','bay',26,2.8,17.66,10.9,6.05,1.18,{columns:4,rows:4}),
+ part('central-bay','Mirador central · tres caras','center','bay',29.95,2.8,17.66,12.7,6.05,1.18,{columns:4,rows:4}),
  part('central-bay-roof','Tejadillo sobre mirador','center','hip',23.2,10.6,15.78,26.55,.25,3.15,{rise:1.4}),
  part('central-left-light','Luz junto al mirador · izquierda','center','vent',24.7,5.3,17.58,.5,2.1,.13,{color:'#877a62'}),
  part('central-right-light','Luz junto al mirador · derecha','center','vent',46.9,5.3,17.56,.5,2.1,.13,{color:'#877a62'}),
