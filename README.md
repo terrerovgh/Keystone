@@ -82,3 +82,9 @@ El plano público de Apartments.com muestra patio cubierto en L: se corrige el m
 La plataforma cubierta, ambas escaleras y el muelle inferior están en la geometría compartida 2D/3D y se excluyen de pavimentos nuevos. El suelo y el agua del modelo permiten mostrar el muelle inferior sin enterrarlo ni inundarlo. No se cambian linderos GIS. La nueva propuesta se añade una sola vez, conserva el frente de la alternativa activa y permite editar posteriormente. El panel explica el cierre, las hipótesis y los niveles; el plano muestra 37 / 27 / 16 / 50 y el saliente 15 × 5.
 
 Las vistas exteriores de Apartments.com se incorporan al selector de referencias: centro y alas desde el muelle, muelle lateral, deck hacia el canal y frente. El modelo de la nueva alternativa sustituye la cubierta central supuesta por un balcón angular, añade habitaciones sobre el porche y volumen posterior de tercer nivel; sus alturas, vanos y caracol son estimaciones visuales, no levantamiento.
+
+## Interfaz del estudio
+
+La pantalla inicial prioriza el modelo y mantiene el inspector cerrado. La alternativa activa se elige desde un único selector; las anteriores siguen disponibles. Las zonas, vistas y estado (actual / propuesta / retiros) se distinguen de los controles de edición. Referencias y medidas se consultan en una ventana independiente con pestañas.
+
+Seleccionar un elemento abre sus datos; en estado actual se muestran las medidas de su línea base y se ofrece pasar a la propuesta para editar. Las herramientas avanzadas y las opciones de vista se despliegan a demanda. Los menús cierran al pulsar fuera o Escape; las ventanas mantienen el foco de teclado y lo devuelven al control de origen. Presupuesto permite filtrar partidas por zona y guarda notas y fuentes bajo cada detalle. El registro de medidas y la configuración de cuadrilla se despliegan en Obra.
