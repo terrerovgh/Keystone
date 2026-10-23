@@ -56,3 +56,11 @@ Las tres nuevas imágenes del propietario se conservan en `public/references/fac
 ### Corrección de entrada central
 
 La referencia de fachada edición 2 centra puerta, torre, óculo y escalones siguiendo la corrección del propietario. Las alas y sus ventanales se reorganizan alrededor del acceso. Al consultar una copia anterior se resuelve la nueva referencia sin escribir automáticamente en la nube; se conservan anchos, colores y otros ajustes personalizados. Las cantidades de pavimentación siguen dependiendo de los contornos del plano, cuya huella GIS continúa siendo provisional. El modo **Realista** añade sombras de contacto, reflejos de entorno y vidrios con profundidad; **Vista rápida** permite reducir el trabajo gráfico.
+
+### Patio: fotografías, visualización y cotas
+
+El proyecto abre ahora en Patio. La vista 3D incorpora un vaso abierto de piscina con agua y coronación, juntas de deck, mobiliario de referencia y escalones descendentes hacia el canal. Se corrige una profundidad de ventanales posteriores que heredaba el fondo del cuerpo de la casa y obstruía la terraza. Se añaden cámaras de piscina, comedor, terraza, muelle y fachada posterior, con fotos, croquis y ortofoto junto al modelo.
+
+El panel del patio incluye las lecturas 37, 16, 27, 50, 4, 5 y 15 × 5 pies del croquis, conservando las ambigüedades de extremos. El desglose y CSV calculan cada lado desde la geometría activa, con coordenadas completas, pulgadas y origen; no elevan estimaciones a medidas comprobadas. El editor pasa a incrementos de una pulgada y presenta equivalencias en pulgadas.
+
+Render hiperrealista es una imagen conceptual fija generada con ImageGen a partir de las tres fotografías del propietario, el croquis y la ortofoto. Representa losas de referencia de 48 × 48 pulgadas con juntas verdes de 6 pulgadas, piscina y muelle conservados. No se regenera al editar el plano y no es una medición. Su prompt y trazabilidad se conservan junto al archivo en `public/renders/`. La vista aérea oblicua se revisó como referencia adicional del modelo.

@@ -106,7 +106,12 @@ export function photoResidence(e:Element,m:Finish,roofs:boolean,model:FacadeMode
  // Skirting, horizontal string course, address numerals, drains and rear glazing.
  for(const [x,z,w] of [[9.33,28.74,14.3],[23.65,17.78,14.3],[44.9,14.5,28.9]]){g.add(block(x,2.2,z-.09,w,.16,.16,trim));g.add(block(x,10.1,z-.18,w,.2,.25,trim))}
  if(typeof document!=='undefined'){const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d')!;ctx.fillStyle='#665f51';ctx.font='70px Georgia';ctx.fillText('2331',8,90);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;const numbers=new T.Mesh(new T.PlaneGeometry(2.15,.54),new T.MeshBasicMaterial({map:t,transparent:true,side:T.DoubleSide}));numbers.position.set(27.4,1.8,16.38);g.add(numbers)}
- for(const [x,z,w] of [[18.4,75.11,12.7],[40,65.5,12],[60,85.5,11.8]]){const p={...model.parts[0],width:w,height:7.2,columns:4,rows:3,arch:'rect' as const};const o=windowMesh(p,local);o.position.set(x+w,2,z);o.rotation.y=Math.PI;g.add(o)}
+ for(const [x,z,w] of [[18.4,75.11,12.7],[40,65.5,12],[60,85.5,11.8]]){const p={...model.parts[0],width:w,height:7.2,depth:.35,columns:4,rows:2,arch:'rect' as const};const o=windowMesh(p,local);o.position.set(x+w,2,z);o.rotation.y=Math.PI;g.add(o)}
+ // The central rear opening and terracotta landing are visible in the owner's aerial image.
+ // Depth and opening proportions are visual estimates; the GIS footprint remains unchanged.
+ const rearBay={...model.parts[0],width:13.3,height:7.25,depth:1.15,y:1.6,columns:3,rows:2,arch:'rect' as const};
+ const rear=bayMesh(rearBay,local);rear.position.set(50.6,0,65.55);rear.rotation.y=Math.PI;g.add(rear);
+ g.add(block(34.5,10.7,65.35,20.9,.2,.28,trim));
  g.traverse(o=>{if(o.userData.roof)o.visible=roofs});
  const root=new T.Group();g.position.set(-9.33,0,-14.565);root.add(g);root.scale.set(e.width/64.503,e.height/30,e.depth/70.83);root.position.set(e.x,e.elevation,e.z);root.rotation.y=-e.rotation*Math.PI/180;
  if(e.rotation){root.position.set(e.x+e.width/2,e.elevation,e.z+e.depth/2);g.position.set(-9.33-64.503/2,0,-14.565-70.83/2)}return root;
