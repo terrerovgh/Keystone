@@ -8,7 +8,7 @@ export interface FacadePart {
  color:string;visible:boolean;source:'Estimada'|'Comprobada';note:string;
  rise:number;columns:number;rows:number;arch:'rect'|'arch'|'fan';posts:number;slope:number;
 }
-export interface FacadeModel {version:1;parts:FacadePart[];wallColor:string;trimColor:string;roofColor:string;roofDetail:boolean}
+export interface FacadeModel {edition?:2;version:1;parts:FacadePart[];wallColor:string;trimColor:string;roofColor:string;roofDetail:boolean}
 export const facadeZoneNames:Record<FacadeZone,string>={left:'Ala izquierda',center:'Centro',entry:'Entrada y torre',right:'Ala derecha',side:'Pasillo lateral'};
 export const facadeKindNames:Record<FacadeKind,string>={volume:'Cuerpo de la casa',gable:'Techo a dos aguas',hip:'Techo de teja',window:'Ventana',bay:'Ventanal saliente',portal:'Portal y puerta',canopy:'Cubierta de estacionamiento',oculus:'Ventana circular',gate:'Puerta de barrotes',trim:'Moldura',vent:'Respiradero',pipe:'Bajante'};
 export const facadeReferences=[
@@ -19,7 +19,7 @@ export const facadeReferences=[
  {path:'/photos/frente.jpg',label:'Foto del propietario · frente'},
 ];
 function part(id:string,name:string,zone:FacadeZone,kind:FacadeKind,x:number,y:number,z:number,width:number,height:number,depth:number,extra:Partial<FacadePart>={}):FacadePart{return {id,name,zone,kind,x,y,z,width,height,depth,rotation:0,color:['window','bay','oculus'].includes(kind)?'#526c66':['gable','hip'].includes(kind)?'#b96b48':'#ddd0ba',visible:true,source:'Estimada',note:'Proporción visual de fotografías. Posición, espesor y medidas pendientes de comprobación en la casa.',rise:0,columns:3,rows:3,arch:'rect',posts:0,slope:1,...extra}}
-export function createFacade():FacadeModel{return {version:1,wallColor:'#d8cfbc',trimColor:'#eeeade',roofColor:'#b96b48',roofDetail:true,parts:[
+export function createPreviousFacade():FacadeModel{return {version:1,wallColor:'#d8cfbc',trimColor:'#eeeade',roofColor:'#b96b48',roofDetail:true,parts:[
  part('left-upper','Cuerpo alto retrasado','left','volume',9.33,11.15,28.8,14.32,8.9,31.76,{color:'#e5ddcd'}),
  part('left-roof','Techo alto del ala izquierda','left','gable',8.72,20.1,28.18,15.5,.32,32.98,{rise:5.65}),
  part('left-arch','Ventanal alto con arco','left','window',12.3,11.25,28.67,8.15,8.15,.35,{arch:'arch',columns:2,rows:2}),
@@ -53,8 +53,46 @@ export function createFacade():FacadeModel{return {version:1,wallColor:'#d8cfbc'
  part('right-gutter','Bajante del ala derecha','side','pipe',73.36,.2,14.4,.18,10.5,.22,{color:'#dbdbcd'}),
  part('right-belt','Banda blanca del ala derecha','right','trim',56.4,2.3,14.36,17,.16,.14,{color:'#eeeadc'}),
  ]}}
+export const FRONT_CENTER=(9.33+73.833)/2;
+const centeredChanges:Record<string,Partial<FacadePart>>={
+ 'central-upper':{width:14.38,height:10.35,color:'#d8c9b7'},
+ 'central-roof':{width:16.0,y:21.8,rise:6.0},
+ 'central-fan':{x:27.4,y:17.6,width:6.9,height:3.45},
+ 'central-bay':{x:25.9,width:9.5},
+ 'central-bay-roof':{width:15.2},
+ 'central-right-light':{x:36.4},
+ 'tower':{x:FRONT_CENTER-3.3,z:19.85,color:'#998c70'},
+ 'tower-roof':{x:FRONT_CENTER-4.05,z:19.17},
+ 'tower-circle':{x:FRONT_CENTER-1.325,z:19.74},
+ 'tower-vent':{x:FRONT_CENTER+3.38,z:23},
+ 'entrance':{x:FRONT_CENTER-3.09,z:19.8,note:'Puerta en el centro de la fachada, según corrección del propietario. Ancho, altura y retranqueo continúan estimados.'},
+ 'right-front-roof':{x:44.25,width:30.2,depth:16.7},
+ 'right-inner-window':{x:48.5,width:6.3},
+ 'right-bay':{x:64.5,width:6.7},
+ 'cart-canopy':{x:45.35,width:11.1},
+ 'cart-circle':{x:45.08,z:20.9},
+ 'right-upper':{x:45.1,width:28.7,color:'#dbc9b9'},
+ 'right-upper-roof':{x:44.45,width:30},
+ 'right-belt':{x:44.9,width:28.9},
+};
+export function createFacade():FacadeModel{
+ const m=createPreviousFacade();m.edition=2;m.wallColor='#c8bba5';m.trimColor='#e9e3d6';
+ m.parts.forEach(p=>Object.assign(p,centeredChanges[p.id]??{}));
+ m.parts.push(part('right-front-body','Cuerpo bajo del ala derecha','right','volume',44.9,0,14.565,28.933,11.15,15.4,{color:m.wallColor}));
+ return m;
+}
+/** Apply the corrected reference without overwriting individual user adjustments or writing to the cloud on view. */
+export function resolveFacade(input?:FacadeModel):FacadeModel{
+ if(!input)return createFacade();if(input.edition===2)return input;
+ const old=createPreviousFacade(),next=structuredClone(input);next.edition=2;
+ for(const p of next.parts){const original=old.parts.find(v=>v.id===p.id),changes=centeredChanges[p.id];if(!original||!changes)continue;for(const [key,value] of Object.entries(changes)){const a=(p as any)[key],b=(original as any)[key];if(a===b||typeof a==='number'&&typeof b==='number'&&Math.abs(a-b)<1e-5)(p as any)[key]=value}}
+ for(const p of next.parts.filter(p=>['entrance','tower','tower-circle','tower-roof'].includes(p.id)))p.x=FRONT_CENTER-p.width/2;
+ if(next.wallColor===old.wallColor)next.wallColor='#c8bba5';if(next.trimColor===old.trimColor)next.trimColor='#e9e3d6';
+ if(!next.parts.some(p=>p.id==='right-front-body'))next.parts.push(createFacade().parts.find(p=>p.id==='right-front-body')!);
+ return next;
+}
 export function validFacade(raw:unknown):raw is FacadeModel{
  if(!raw||typeof raw!=='object')return false;const m=raw as FacadeModel,hex=(s:unknown)=>typeof s==='string'&&/^#[\da-f]{6}$/i.test(s),n=(x:unknown,min:number,max:number)=>typeof x==='number'&&Number.isFinite(x)&&x>=min&&x<=max;
- return m.version===1&&hex(m.wallColor)&&hex(m.trimColor)&&hex(m.roofColor)&&typeof m.roofDetail==='boolean'&&Array.isArray(m.parts)&&m.parts.length>0&&m.parts.length<=160&&m.parts.every(p=>p&&typeof p.id==='string'&&p.id.length<=120&&typeof p.name==='string'&&p.name.length<=120&&typeof p.note==='string'&&p.note.length<=1000&&Object.hasOwn(facadeKindNames,p.kind)&&Object.hasOwn(facadeZoneNames,p.zone)&&['Estimada','Comprobada'].includes(p.source)&&['rect','arch','fan'].includes(p.arch)&&typeof p.visible==='boolean'&&hex(p.color)&&n(p.x,-100,200)&&n(p.z,-100,220)&&n(p.y,-10,70)&&n(p.width,.05,100)&&n(p.height,.05,70)&&n(p.depth,.02,120)&&n(p.rotation,-360,360)&&n(p.rise,0,30)&&n(p.columns,1,16)&&Number.isInteger(p.columns)&&n(p.rows,1,16)&&Number.isInteger(p.rows)&&n(p.posts,0,15)&&Number.isInteger(p.posts)&&n(p.slope,-15,15))&&new Set(m.parts.map(p=>p.id)).size===m.parts.length;
+ return (m.edition===undefined||m.edition===2)&&m.version===1&&hex(m.wallColor)&&hex(m.trimColor)&&hex(m.roofColor)&&typeof m.roofDetail==='boolean'&&Array.isArray(m.parts)&&m.parts.length>0&&m.parts.length<=160&&m.parts.every(p=>p&&typeof p.id==='string'&&p.id.length<=120&&typeof p.name==='string'&&p.name.length<=120&&typeof p.note==='string'&&p.note.length<=1000&&Object.hasOwn(facadeKindNames,p.kind)&&Object.hasOwn(facadeZoneNames,p.zone)&&['Estimada','Comprobada'].includes(p.source)&&['rect','arch','fan'].includes(p.arch)&&typeof p.visible==='boolean'&&hex(p.color)&&n(p.x,-100,200)&&n(p.z,-100,220)&&n(p.y,-10,70)&&n(p.width,.05,100)&&n(p.height,.05,70)&&n(p.depth,.02,120)&&n(p.rotation,-360,360)&&n(p.rise,0,30)&&n(p.columns,1,16)&&Number.isInteger(p.columns)&&n(p.rows,1,16)&&Number.isInteger(p.rows)&&n(p.posts,0,15)&&Number.isInteger(p.posts)&&n(p.slope,-15,15))&&new Set(m.parts.map(p=>p.id)).size===m.parts.length;
 }
 export function ensureFacade<P extends {facade?:FacadeModel}>(p:P):P{return p.facade?p:{...p,facade:createFacade()}}
