@@ -40,7 +40,9 @@ export function createGateway({ origin, credentials, upstream = 'http://127.0.0.
     }
     failures.delete(address);
     if ((request.headers.origin && request.headers.origin !== publicUrl.origin) ||
-        request.headers['sec-fetch-site'] === 'cross-site') return response.writeHead(403).end('Origen no permitido.');
+        (!['GET', 'HEAD', 'OPTIONS'].includes(request.method) && request.headers['sec-fetch-site'] === 'cross-site')) {
+      return response.writeHead(403).end('Origen no permitido.');
+    }
     if (!request.url?.startsWith('/') || request.url.startsWith('//')) return response.writeHead(400).end();
     if (['/signin-with-chatgpt', '/signout-with-chatgpt', '/callback'].includes(request.url.split('?')[0])) {
       return response.writeHead(303, { Location: '/' }).end();

@@ -22,6 +22,7 @@ test('el acceso privado rechaza identidades falsificadas y orígenes externos', 
   });
   assert.equal((await request({ 'oai-authenticated-user-id': 'spoofed' })).status, 401);
   const authorization = `Basic ${Buffer.from('owner:example').toString('base64')}`;
+  assert.equal((await request({ authorization, 'sec-fetch-site': 'cross-site' })).status, 200);
   assert.equal((await request({ authorization, origin: 'https://attacker.test' })).status, 403);
   assert.equal((await request({ authorization, host: 'attacker.test' })).status, 421);
   const result = await request({ authorization, origin: 'https://keystone.test', 'oai-authenticated-user-id': 'spoofed', 'x-forwarded-host': 'attacker.test' });
