@@ -29,7 +29,7 @@ export function bounds(p:MultiPolygon){const pts=p.flat(2);return pts.length?{x:
 export const mapPoly=(p:MultiPolygon,fn:(p:Point)=>Point):MultiPolygon=>p.map(poly=>poly.map(r=>r.map(fn)));
 export function pathData(p:MultiPolygon){return p.map(poly=>poly.map(r=>`M${r.map(pt=>pt.map(n=>n.toFixed(4)).join(',')).join('L')}Z`).join('')).join('');}
 export interface Tile {id:string; polygon:MultiPolygon; full:boolean; row:number; col:number; x:number; z:number;}
-export interface Surface {net:MultiPolygon; paving:MultiPolygon; paths:MultiPolygon; concrete:MultiPolygon; grass:MultiPolygon; gardens:MultiPolygon; tiles:Tile[]; pathTiles:Tile[]; turfCuts:MultiPolygon[]; elevated:MultiPolygon;}
+export interface Surface {grassParts?: {ownerId?:string;polygon:MultiPolygon}[]; net:MultiPolygon; paving:MultiPolygon; paths:MultiPolygon; concrete:MultiPolygon; grass:MultiPolygon; gardens:MultiPolygon; tiles:Tile[]; pathTiles:Tile[]; turfCuts:MultiPolygon[]; elevated:MultiPolygon;}
 export function footprint(elements:Element[],zone:Zone){
   const active=elements.filter(e=>e.action!=='retirar');
   const hard=union(active.filter(e=>['pool','house','dock','stairs','fixed'].includes(e.kind)).map(polyFor));
@@ -59,10 +59,18 @@ export function surface(proposal:Proposal,zone:Zone):Surface {
   if(hasGrecas(s,zone)){
     const jointElements=elements.filter(e=>e.zone===zone&&e.style==='greca-joint'&&e.action!=='retirar');
     const grass=intersection(paving,union(jointElements.map(polyFor))),concretePaving=difference(paving,grass),concrete=union([concretePaving,paths]);
-    const tiles:Tile[]=[],turfCuts:MultiPolygon[]=[];let rest=grass;
+    const tiles:Tile[]=[],turfCuts:MultiPolygon[]=[],grassParts:NonNullable<Surface['grassParts']>=[];let rest=grass;
     // Cada tramo se compra por separado; los encuentros se descuentan una sola vez.
-    for(const e of jointElements){const r=ringFor(e);for(let i=0;i<(r.length-1)/2-1;i++){const j=r.length-2-i,part=intersection(rest,[[[r[i],r[i+1],r[j-1],r[j],r[i]]]]);if(area(part)>1e-6){turfCuts.push(part);rest=difference(rest,part)}}}
-    if(area(rest)>1e-6)turfCuts.push(rest);
+    for(const e of jointElements){const r=ringFor(e);for(let i=0;i<(r.length-1)/2-1;i++){
+      const j=r.length-2-i,quad=[r[i],r[i+1],r[j-1],r[j]];
+      const center:Point=[quad.reduce((n,p)=>n+p[0],0)/4,quad.reduce((n,p)=>n+p[1],0)/4];
+      // Solapa mínimamente el cortador para evitar aristas casi coincidentes tras redondear
+      // intersecciones diagonales. Solo particiona compras: no cambia el césped del diseño.
+      const cutter=quad.map(([x,z]):Point=>[center[0]+(x-center[0])*1.001,center[1]+(z-center[1])*1.001]);
+      const part=intersection(rest,[[[...cutter,cutter[0]]]]);
+      if(area(part)>1e-6){turfCuts.push(part);grassParts.push({ownerId:e.id,polygon:part});rest=difference(rest,[[[...cutter,cutter[0]]]])}
+    }}
+    if(area(rest)>1e-6){turfCuts.push(rest);grassParts.push({polygon:rest})}
     const pieces=(polys:MultiPolygon,prefix:string):Tile[]=>{
       if(s.method==='vaciado')return polys.map((polygon,i)=>({id:`${prefix}:${zone}:${i}`,polygon:[polygon],full:false,row:0,col:i,x:bounds([polygon]).x,z:bounds([polygon]).z}));
       const local=mapPoly(polys,p=>rotate([p[0]-s.gridX,p[1]-s.gridZ],-s.angle)),b=bounds(local),out:Tile[]=[];
@@ -73,7 +81,7 @@ export function surface(proposal:Proposal,zone:Zone):Surface {
       }return out;
     };
     tiles.push(...pieces(concretePaving,'greca'));
-    return {net,paving,paths,concrete,grass,gardens,tiles,pathTiles:pieces(paths,'path'),turfCuts,elevated:intersection(net,union(elements.filter(e=>e.zone===zone&&['paving','path'].includes(e.kind)&&e.support!=='terreno'&&e.action!=='retirar').map(polyFor)))};
+    return {grassParts,net,paving,paths,concrete,grass,gardens,tiles,pathTiles:pieces(paths,'path'),turfCuts,elevated:intersection(net,union(elements.filter(e=>e.zone===zone&&['paving','path'].includes(e.kind)&&e.support!=='terreno'&&e.action!=='retirar').map(polyFor)))};
   }
   const local=(p:Point)=>{const q=rotate([p[0]-s.gridX,p[1]-s.gridZ],-s.angle);return q};
   const global=(p:Point)=>{const q=rotate(p,s.angle);return [q[0]+s.gridX,q[1]+s.gridZ] as Point};

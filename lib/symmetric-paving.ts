@@ -23,7 +23,7 @@ function designFrame(proposal: Proposal, zone: Zone) {
 }
 
 /** Reserva el motivo completo y su margen en ambos lados, sin recortes asimétricos. */
-function placement(paired: MultiPolygon, size: number): Point | null {
+export function symmetricMotifPlacement(paired: MultiPolygon, size: number): Point | null {
   const b = bounds(paired), maxX = Math.min(-2.75 - size, b.maxX - size - CLEARANCE), maxZ = b.maxZ - size - CLEARANCE;
   const startX = b.x + CLEARANCE, startZ = b.z + CLEARANCE;
   if (startX > maxX || startZ > maxZ) return null;
@@ -50,7 +50,7 @@ export function withSymmetricPaving(input: Project): Project {
   if (!front || !back) return input;
   let layout: {size: number; front: Point; back: Point} | null = null;
   for (let size = 14; size >= 4; size--) {
-    const f = placement(front.paired, size), b = placement(back.paired, size);
+    const f = symmetricMotifPlacement(front.paired, size), b = symmetricMotifPlacement(back.paired, size);
     if (f && b) { layout = {size, front: f, back: b}; break; }
   }
   if (!layout) return input;

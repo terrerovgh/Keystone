@@ -38,7 +38,7 @@ export function calculate(project:Project,proposal:Proposal){
       add('irrigation','Ajustes de riego',zone,null,'lote','Recorrido y necesidades pendientes de visita.');
     }
     add('edging','Contención exterior',zone,perimeter(t.net),'ft','Perímetro exterior y huecos; no duplica todos los bordes de cada cuadro.');
-    const modifiedGardens=area(intersection(t.gardens,union(proposal.elements.filter(e=>e.zone===zone&&e.kind==='garden'&&['nuevo','trasladar'].includes(e.action)).map(polyFor))));
+    const modifiedGardens=area(intersection(t.gardens,union(proposal.elements.filter(e=>e.zone===zone&&e.kind==='garden'&&e.style!=='greca-joint'&&['nuevo','trasladar'].includes(e.action)).map(polyFor))));
     add('soil','Tierra de jardineras · reposición',zone,modifiedGardens*s.soil/12/27*w,'yd³','Solo jardineras nuevas o trasladadas; excluye las marcadas conservar. Capa de tierra editable.');
     if(modifiedGardens>0)add('planting','Jardinería · rehacer áreas modificadas',zone,modifiedGardens,'ft²','Definir vegetación y mano de obra en cotización por área. Tierra y palmas se desglosan por separado.');
     const days=a/(s.productivity*s.crew);

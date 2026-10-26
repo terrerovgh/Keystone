@@ -32,6 +32,8 @@ Para la API local, `scripts/test-api.ts` presupone un Worker compilado en `127.0
 - `tests/patio-estimate.test.ts`: interpretación y procedencia de la propuesta de patio.
 - `tests/patio.test.ts`: dimensiones, escalones, niveles y detalles del patio.
 - `tests/pavement-lines.test.ts`: trazados rectos/diagonales, edición del recorrido, cambio de ancho girado, cruces, recortes y respaldos de líneas.
+- `tests/paving-patterns.test.ts`: catálogo sobre ambas zonas, recortes del recorrido central, anchos y giros junto a jardines curvos, particiones compartidas con 3D, conservación de líneas manuales y validación de respaldos.
+- `tests/paving-area-design.test.ts`: motivos completos sin deformación, márgenes físicos a piscina y contorno, simetría de accesos, huecos menores que la malla, pasos estrechos y recálculo al cambiar el área.
 - `tests/editor-tools.test.ts`: origen de coordenadas, redimensionado girado, medidas imperiales, contornos y ediciones atómicas.
 - `tests/regulations.test.ts`: aplicabilidad por diseño, jurisdicción, actualización e integridad de los PDF archivados.
 - `tests/precision.test.ts`: precisión de contornos, cantidades, exclusiones y materiales.
