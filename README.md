@@ -4,13 +4,15 @@ Aplicación privada en español para el frente y el patio de 2331 Keystone Blvd,
 
 ## Guías para desarrolladores y agentes
 
+Para el despliegue privado en Dokploy con Docker y almacenamiento persistente, consulta [`docs/self-hosting.md`](docs/self-hosting.md).
+
 Empieza por [`AGENTS.md`](AGENTS.md) y el índice de [`docs/`](docs/index.md). Allí están la arquitectura, el modelo de geometría compartida, la instalación y comandos, las fuentes y límites de precisión, y las reglas de publicación/seguridad. `CLAUDE.md` enlaza esas mismas instrucciones para Claude Code. Para OpenCode, Codex y agentes con soporte de `AGENTS.md`, la guía raíz es el punto de entrada; en otros agentes, indica que lean `AGENTS.md` y las guías de `docs/` antes de editar.
 
 ## Uso
 
 1. Elegir Curvas · base GIS o Rectas · base GIS y la zona Frente o Patio.
 2. Seleccionar un elemento en la lista o la vista. En Mover se arrastra; el panel permite escribir dimensiones, posición, giro y nivel. La casa y la piscina se desbloquean explícitamente.
-3. En Plano, Editar contorno mueve los vértices. La herramienta de cuadros convierte piezas en césped y permite recuperarlas. Dibujar contorno crea pavimento, jardín o camino; Medir distancia permite marcar dos puntos. Los controles del elemento permiten girar y cambiar tamaño con arrastre. Ajuste a 1 pulgada; Mayús libera el ajuste. Flechas mueven 1 pulgada; Mayús + flechas mueve 1 pie. Cmd/Ctrl Z deshace y Cmd/Ctrl D duplica.
+3. En Plano, Editar contorno mueve los vértices. La herramienta de cuadros convierte piezas en césped y permite recuperarlas. Dibujar contorno crea pavimento, jardín o camino; Medir distancia permite marcar dos puntos. Los controles del elemento permiten girar y cambiar tamaño con arrastre. Ajuste configurable, inicialmente a 1 pulgada; Mayús libera el ajuste. Flechas mueven 1 pulgada; Mayús + flechas mueve 1 pie. Cmd/Ctrl Z deshace y Cmd/Ctrl D duplica.
 4. En Materiales y presupuesto, completar las tarifas vacías. Un importe pendiente nunca se convierte en cero ni se presenta como costo final.
 5. En Obra y documentos, registrar mediciones verificadas y revisar etapas. Ese registro documental es independiente de las dimensiones del editor; deben actualizarse ambas.
 6. Exportar PDF, CSV de cantidades y de cada pieza, captura PNG de la vista 3D o respaldo JSON. El historial conserva versiones con nombre. La importación y la restauración permiten deshacer.
@@ -101,3 +103,32 @@ La alternativa adicional «Frente · medialuna central» alinea el eje de la pue
 Plano, inspector y arrastre 3D confirman cambios sobre los mismos elementos. Los recortes de camino y jardineras, la selección de pavimentos y los perfiles de escalones comparten geometría. La huella visible de los muros en el plano se deriva de los volúmenes de fachada que construyen el modelo; el límite GIS provisional para cantidades se conserva. Los contornos editados se normalizan sin desplazar sus vértices en coordenadas de proyecto, incluso al girarlos. Los cambios de ancho del camino y la medialuna conservan su eje; moverlos sigue siendo una edición explícita.
 
 La apertura inicial vuelve a Frente / Propuesta para revisar esta corrección. Anchos y perfiles de escalones, profundidad de medialuna y alturas siguen siendo estimaciones. La imagen conceptual fija de Render no se sincroniza; la vista 3D editable sí.
+
+
+## Edición de precisión y base normativa
+
+Plano y 3D comparten paso de ajuste (½ in, 1 in, 6 in, 1 ft o libre), restricción por eje y comandos de selección. El movimiento mantiene los decimales de origen y ajusta el desplazamiento. Mayús libera el ajuste y Escape cancela un arrastre sin confirmar. En Plano se muestran Contorno, Dibujar y Cotas; los puntos dorados añaden vértices al tramo elegido. Enter o pulsar el primer punto cierra el dibujo, Backspace retira su último vértice y Escape lo cancela. V selecciona, M mueve, R mide, P dibuja y H desplaza. Los campos en pies admiten `14' 4"`, `14 ft 4 1/2 in` o pies decimales.
+
+Obra incorpora una biblioteca de 24 referencias oficiales y 13 PDF íntegros descargables, buscador y hallazgos vinculados al diseño activo. El paquete descargable incluye el catálogo con SHA-256 y la guía. Los códigos completos se consultan mediante los portales oficiales enlazados. La revisión corresponde a North Miami al 23 de octubre de 2026; no constituye un expediente aprobado ni un inventario exhaustivo para cualquier alcance. Consulta [`docs/legal-and-compliance.md`](docs/legal-and-compliance.md) para versiones, discrepancias, datos del predio pendientes y mantenimiento. El expediente PDF añade la revisión y el índice normativo.
+
+
+## Driveway con grecas del croquis
+
+La nueva alternativa «Driveway · grecas simples» sustituye la cuadrícula del frente por paños continuos de concreto con cinco grecas abiertas de líneas verdes a 90°, siguiendo IMG_0541 del propietario. Conserva las propuestas previas, contornos, medialuna, camino a la puerta y patio. Las líneas tienen un ancho nominal de diseño de 4 in al aplicar la referencia inicial; sus proporciones no son medidas de campo. Cada greca es un contorno seleccionable, movible y editable desde Plano o 3D. Se recorta al pavimento nuevo y excluye casa, jardines, camino y acera conservados.
+
+`lib/driveway-greca.ts` agrega la alternativa una sola vez. `surface` calcula paños, líneas verdes, compra de césped y volúmenes para ambas vistas y exportaciones. Las líneas decorativas no especifican las juntas de contracción, construcción o dilatación; esos detalles siguen pendientes de resolución técnica. El patio conserva su cuadrícula y parámetros anteriores.
+
+## Dibujar líneas propias sobre el pavimento
+
+En **Plano → Líneas** (atajo **L**), elige un ancho de 1 a 24 pulgadas y marca el inicio y cada giro con clics. «Ángulos de 90°» facilita trazar grecas; desmárcalo para diagonales o mantén Mayús para un tramo libre. **Terminar línea**, doble clic o Enter confirma el recorrido. Backspace o «Quitar punto» retira el último punto; Escape o «Cancelar» descarta el trazado sin guardar. La herramienta permanece activa para añadir otra línea.
+
+Al seleccionar una línea nueva en el plano aparecen sus puntos centrales. Puedes arrastrarlos, añadir puntos dorados entre tramos y cambiar el ancho desde el inspector. El recorrido conserva su posición al cambiar de ancho, incluso girado. Las líneas se recortan al pavimento nuevo, se descuentan una sola vez en los encuentros y se actualizan en 3D, cantidades, historial y respaldos. En una zona con cuadrícula se conservan las franjas anteriores. El trazado es decorativo y no especifica juntas técnicas de construcción.
+
+Las líneas nuevas guardan `shape: polyline`, `points` como recorrido central y `lineWidth` en pies. `lib/line-geometry.ts` deriva el contorno usado por el plano, Three.js y cantidades; no se almacena una segunda copia del contorno. Las grecas antiguas por polígonos siguen siendo editables y compatibles.
+
+
+## Grecas simétricas en frente y patio
+
+La alternativa «Grecas simétricas · frente y patio» conserva los diseños anteriores y usa un par de grecas reflejadas en cada zona. Ambos pares comparten recorrido, tamaño y ancho de diseño de 4 in. El frente toma el eje del camino y el patio el de la escalera central. El motivo se ajusta al espacio libre común de ambos lados, con separación del borde, sin cambiar casa, piscina, jardines, contornos ni cotas. Son líneas editables con los mismos controles de puntos y ancho de **Plano → Contorno**.
+
+`lib/symmetric-paving.ts` agrega la alternativa una sola vez a partir de la propuesta activa. El ajuste verifica el motivo completo y su margen en el pavimento disponible y su reflejo; evita que el recorte contra un obstáculo rompa la simetría. Si no cabe el mismo motivo en ambas zonas, no altera el proyecto. En esta alternativa el patio también utiliza paños continuos con grecas; las anteriores conservan su patrón. `frontPattern` y `backPattern` son independientes y opcionales: su ausencia mantiene la cuadrícula histórica. Áreas, volúmenes y exportaciones usan la misma geometría de las vistas.

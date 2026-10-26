@@ -1,5 +1,5 @@
 import { area, demolitionFor, difference, intersection, polyFor, union, footprint, perimeter, surface, turfRolls } from './geometry';
-import { baselineFor, type Project, type Proposal, type Zone } from './project';
+import { hasGrecas, baselineFor, type Project, type Proposal, type Zone } from './project';
 import { earthVolumes, supportAreas } from './engineering';
 export interface Line {key:string;name:string;zone:Zone|'shared';qty:number|null;unit:string;rate:number|null;amount:number|null;note:string;source:string;date:string;url?:string;}
 export function calculate(project:Project,proposal:Proposal){
@@ -24,7 +24,7 @@ export function calculate(project:Project,proposal:Proposal){
     add('base','Base granular · terreno definido',zone,ground>0?ground*s.base/12/27*s.looseFactor:unverified>0?null:0,'yd³',`Colocado ${(ground*s.base/12/27).toFixed(2)} yd³. Solo ${ground.toFixed(1)} ft² sobre terreno. Factor ${s.looseFactor}. No incluye áreas sin verificar ni elevadas.`);
     if(s.method==='vaciado'){
       add('concrete','Concreto · compra',zone,volume*w,'yd³',`Neto ${volume.toFixed(2)} yd³ + ${s.waste}% de reserva; espesor preliminar ${th}″. Mezcla final pendiente.`);
-      add('forms','Moldes de cuadros y caminos',zone,forms,'ft','Incluye bordes de cada cuadro, recortes y caminos.');
+      add('forms',hasGrecas(s,zone)?'Moldes de paños, grecas y camino':'Moldes de cuadros y caminos',zone,forms,'ft',hasGrecas(s,zone)?'Perímetros de paños continuos y líneas verdes. La greca es decorativa; juntas de control y construcción por definir.':'Incluye bordes de cada cuadro, recortes y caminos.');
     }else{
       add('precast','Piezas prefabricadas · compra',zone,Math.ceil(t.tiles.length*w),'ud',`${t.tiles.length} piezas de cuadrícula, ${totals[zone].cuts} con cortes. Sin reutilizar recortes. Capacidad vehicular pendiente.`);
       add('precast','Piezas para camino continuo',zone,Math.ceil(t.pathTiles.length*w),'ud',`${t.pathTiles.length} piezas recortadas con el formato de ${s.tile} ft, ${t.pathTiles.filter(x=>!x.full).length} cortes. Sin reutilizar recortes.`);

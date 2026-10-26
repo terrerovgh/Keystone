@@ -1,3 +1,4 @@
+import { lineOutline } from './line-geometry';
 import { validRing } from './engineering';
 import { withReferenceEdition, withFrontCalibration } from './site-reference';
 import { ensureFacade, validFacade, type FacadeModel } from './facade';
@@ -9,11 +10,13 @@ export interface Element {
   id: string; name: string; zone: Zone; kind: Kind; x: number; z: number;
   width: number; depth: number; rotation: number; elevation: number; height: number;
   groundElevation?: number; slopeX?: number; slopeZ?: number; style?: string;
-  shape: 'rect' | 'ellipse' | 'polygon'; points?: Point[]; edgeSources?:Record<string,Source>; color: string;
+  shape: 'rect' | 'ellipse' | 'polygon' | 'polyline'; lineWidth?: number; points?: Point[]; edgeSources?:Record<string,Source>; color: string;
   locked: boolean; action: 'conservar' | 'retirar' | 'nuevo' | 'trasladar';
   source: Source; note: string; support: 'terreno' | 'elevado' | 'por verificar';
 }
 export interface Settings {
+  frontPattern?: 'grid' | 'greca';
+  backPattern?: 'grid' | 'greca';
   tile: number; gap: number; angle: number; gridX: number; gridZ: number;
   thickness: number; backThickness: number; base: number; excavation: number;
   demolitionFront: number; demolitionBack: number; waste: number; looseFactor: number;
@@ -22,6 +25,7 @@ export interface Settings {
   sodPack?: number; sodUnit?: 'area'|'pallet'; turfUnit?: 'linear'|'roll'; minTurf?: number; infillLb?: number;
   productivity: number; curingDays: number; overhead: number; contingency: number; tax: number;
 }
+export const hasGrecas = (settings: Settings, zone: Zone) => (zone === 'front' ? settings.frontPattern : settings.backPattern) === 'greca';
 export interface Rate { value: number | null; source: string; date: string; url?: string }
 export interface Measure { id: string; label: string; value: string; source: Source; note: string }
 export interface Proposal { frontAlignment?:1; patioCalibration?:1; frontCalibration?:3; referenceEdition?: 2; baseline?: Element[]; id: string; name: string; description: string; elements: Element[]; settings: Settings; exceptions: Record<string, 'turf' | 'concrete'> }
@@ -118,7 +122,7 @@ export function validProject(raw: unknown): raw is Project {
   const str=(s:unknown,max=250)=>typeof s==='string'&&s.length<=max;
   const finite=(n:unknown,min=-1000,max=1000)=>typeof n==='number'&&Number.isFinite(n)&&n>=min&&n<=max;
   const obj=(o:unknown)=>!!o&&typeof o==='object'&&!Array.isArray(o);
-  const validElement=(e:Element)=>obj(e)&&str(e.id,120)&&str(e.name,120)&&str(e.note,1000)&&['paving','garden','path','pool','house','palm','furniture','dock','stairs','fixed'].includes(e.kind)&&['front','back'].includes(e.zone)&&['rect','ellipse','polygon'].includes(e.shape)&&['Comprobada','Croquis','Estimada','Referencia GIS'].includes(e.source)&&['terreno','elevado','por verificar'].includes(e.support)&&['conservar','retirar','nuevo','trasladar'].includes(e.action)&&typeof e.locked==='boolean'&&(e.groundElevation===undefined||finite(e.groundElevation,-20,30))&&(e.slopeX===undefined||finite(e.slopeX,-15,15))&&(e.slopeZ===undefined||finite(e.slopeZ,-15,15))&&/^#[0-9a-fA-F]{6}$/.test(e.color)&&['x','z','rotation','elevation'].every(k=>finite((e as any)[k]))&&finite(e.height,0,100)&&finite(e.width,.1,300)&&finite(e.depth,.1,300)&&(e.shape!=='polygon'||Array.isArray(e.points)&&e.points.length>=3)&&(!e.points||e.points.length<=100&&e.points.every(a=>Array.isArray(a)&&a.length===2&&a.every(n=>finite(n)))&&(e.shape!=='polygon'||validRing(e.points!)));
+  const validElement=(e:Element)=>obj(e)&&str(e.id,120)&&str(e.name,120)&&str(e.note,1000)&&['paving','garden','path','pool','house','palm','furniture','dock','stairs','fixed'].includes(e.kind)&&['front','back'].includes(e.zone)&&['rect','ellipse','polygon','polyline'].includes(e.shape)&&['Comprobada','Croquis','Estimada','Referencia GIS'].includes(e.source)&&['terreno','elevado','por verificar'].includes(e.support)&&['conservar','retirar','nuevo','trasladar'].includes(e.action)&&typeof e.locked==='boolean'&&(e.groundElevation===undefined||finite(e.groundElevation,-20,30))&&(e.slopeX===undefined||finite(e.slopeX,-15,15))&&(e.slopeZ===undefined||finite(e.slopeZ,-15,15))&&/^#[0-9a-fA-F]{6}$/.test(e.color)&&['x','z','rotation','elevation'].every(k=>finite((e as any)[k]))&&finite(e.height,0,100)&&finite(e.width,e.shape==='polyline'?.01:.1,300)&&finite(e.depth,e.shape==='polyline'?.01:.1,300)&&(e.lineWidth===undefined||finite(e.lineWidth,1/12,2))&&(e.shape!=='polyline'||e.style==='greca-joint'&&e.kind==='garden'&&typeof e.lineWidth==='number'&&Array.isArray(e.points)&&e.points.length>=2&&e.points.length<=50)&&(e.shape!=='polygon'||Array.isArray(e.points)&&e.points.length>=3)&&(!e.points||e.points.length<=100&&e.points.every(a=>Array.isArray(a)&&a.length===2&&a.every(n=>finite(n)))&&(e.shape!=='polygon'||validRing(e.points!))&&(e.shape!=='polyline'||validRing(lineOutline(e.points!,e.lineWidth!))));
   const validElements=(es:Element[])=>Array.isArray(es)&&es.length>0&&es.length<=250&&es.every(validElement)&&new Set(es.map(e=>e.id)).size===es.length;
   if(p.schemaVersion!==1||!str(p.title,120)||!str(p.address,250)||!validElements(p.existing)||!Array.isArray(p.proposals)||p.proposals.length<1||p.proposals.length>30||!obj(p.rates)||!Array.isArray(p.measures)||p.measures.length>100||!obj(p.checklist)||!Object.values(p.checklist).every(b=>typeof b==='boolean')||!str(p.activeId,120)||!p.proposals.some(v=>v&&v.id===p.activeId)||!str(p.updatedAt)||!Number.isFinite(Date.parse(p.updatedAt)))return false;
   if(!p.measures.every(m=>obj(m)&&str(m.id,120)&&str(m.label,150)&&str(m.value,150)&&str(m.note,1000)&&['Comprobada','Croquis','Estimada','Referencia GIS'].includes(m.source)))return false;
@@ -127,6 +131,6 @@ export function validProject(raw: unknown): raw is Project {
     if(!obj(v)||(v.frontAlignment!==undefined&&v.frontAlignment!==1)||(v.patioCalibration!==undefined&&v.patioCalibration!==1)||!str(v.id,120)||!str(v.name,120)||!str(v.description,400)||!obj(v.settings)||!obj(v.exceptions)||Object.keys(v.exceptions).length>16000||!Object.entries(v.exceptions).every(([id,state])=>/^(front|back):-?\d+:-?\d+$/.test(id)&&['turf','concrete'].includes(state))||!validElements(v.elements)||(v.baseline!==undefined&&!validElements(v.baseline)))return false;
     const s=v.settings;
     if(!Object.keys(baseSettings).every(k=>k in s)||!Object.entries(s).every(([k,value])=>typeof value==='number'?finite(value,-1000,10000):typeof value==='string'))return false;
-    return finite(s.tile,1,12)&&finite(s.gap,.1,2)&&finite(s.angle,-90,90)&&finite(s.gridX,-20,20)&&finite(s.gridZ,-20,20)&&finite(s.thickness,1,12)&&finite(s.backThickness,1,12)&&finite(s.base,0,24)&&finite(s.excavation,0,36)&&finite(s.waste,0,50)&&finite(s.looseFactor,1,2)&&finite(s.rollWidth,1,30)&&finite(s.rollLength,1,200)&&finite(s.crew,1,30)&&finite(s.productivity,1,1000)&&finite(s.hours,1,16)&&finite(s.demolitionFront,.25,12)&&finite(s.demolitionBack,.25,12)&&finite(s.soil,0,24)&&finite(s.curingDays,0,90)&&finite(s.overhead,0,100)&&finite(s.contingency,0,100)&&finite(s.tax,0,30)&&(s.sodPack===undefined||finite(s.sodPack,1,2000))&&(s.minTurf===undefined||finite(s.minTurf,0,10000))&&(s.infillLb===undefined||finite(s.infillLb,0,10))&&(s.turfUnit===undefined||['linear','roll'].includes(s.turfUnit))&&(s.sodUnit===undefined||['area','pallet'].includes(s.sodUnit))&&['artificial','natural'].includes(s.turf)&&['vaciado','prefabricado'].includes(s.method)&&/^#[0-9a-fA-F]{6}$/.test(s.concreteColor);
+    return (s.frontPattern===undefined||['grid','greca'].includes(s.frontPattern))&&(s.backPattern===undefined||['grid','greca'].includes(s.backPattern))&&finite(s.tile,1,12)&&finite(s.gap,.1,2)&&finite(s.angle,-90,90)&&finite(s.gridX,-20,20)&&finite(s.gridZ,-20,20)&&finite(s.thickness,1,12)&&finite(s.backThickness,1,12)&&finite(s.base,0,24)&&finite(s.excavation,0,36)&&finite(s.waste,0,50)&&finite(s.looseFactor,1,2)&&finite(s.rollWidth,1,30)&&finite(s.rollLength,1,200)&&finite(s.crew,1,30)&&finite(s.productivity,1,1000)&&finite(s.hours,1,16)&&finite(s.demolitionFront,.25,12)&&finite(s.demolitionBack,.25,12)&&finite(s.soil,0,24)&&finite(s.curingDays,0,90)&&finite(s.overhead,0,100)&&finite(s.contingency,0,100)&&finite(s.tax,0,30)&&(s.sodPack===undefined||finite(s.sodPack,1,2000))&&(s.minTurf===undefined||finite(s.minTurf,0,10000))&&(s.infillLb===undefined||finite(s.infillLb,0,10))&&(s.turfUnit===undefined||['linear','roll'].includes(s.turfUnit))&&(s.sodUnit===undefined||['area','pallet'].includes(s.sodUnit))&&['artificial','natural'].includes(s.turf)&&['vaciado','prefabricado'].includes(s.method)&&/^#[0-9a-fA-F]{6}$/.test(s.concreteColor);
   })&&Object.keys(createProject().rates).every(k=>k in p.rates)&&Object.values(p.rates).every(r=>obj(r)&&(r.value===null||finite(r.value,0,10000000))&&str(r.source,1000)&&str(r.date,50)&&(!r.url||str(r.url,2000)&&/^https?:\/\//.test(r.url)));
 }

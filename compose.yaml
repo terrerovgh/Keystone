@@ -1,0 +1,22 @@
+services:
+  keystone:
+    build: .
+    image: keystone-studio:local
+    restart: unless-stopped
+    init: true
+    environment:
+      KEYSTONE_ORIGIN: https://keystone.terrerov.com
+    volumes:
+      - /srv/tuf/keystone:/data
+      - /etc/tuf-infra/secrets/keystone-auth.json:/run/secrets/keystone-auth.json:ro
+    networks:
+      tuf-frontend:
+        aliases: [keystone-studio]
+    mem_limit: 2g
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+networks:
+  tuf-frontend:
+    external: true

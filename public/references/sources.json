@@ -174,5 +174,16 @@
     "designPathWidthFeet": 4,
     "accuracy": "La anchura de 25 ft procede del croquis. Fondo, camino, perfiles y alturas de escalones son estimaciones de diseño, no cotas de campo.",
     "implementation": "Una geometría compartida para contornos, recortes y escalones. Nueva alternativa reversible que conserva las anteriores y el patio."
+  },
+  "drivewayGrecaSketch": {
+    "source": "Fotografía del croquis del propietario",
+    "originalFilename": "IMG_0541.HEIC",
+    "originalSha256": "c7f7eaaa5522c1df3634e480d66ae48ff356bc83d93fdb0176af090315c7753a",
+    "file": "/references/driveway-grecas-propietario.jpg",
+    "derivedSha256": "98df116873b2e63cbb888781202f13303146307fd9eca105cf5ced7ae552742a",
+    "transformation": "Conversión HEIC a JPEG con sips; original preservado en Downloads.",
+    "consultedAt": "2026-10-23",
+    "use": "Interpretación de líneas abiertas a 90 grados sobre paños de concreto.",
+    "limits": "No se modifican medidas del terreno ni del croquis anterior. Ancho, posición y escala de las grecas son decisiones de diseño estimadas; no son juntas técnicas especificadas."
   }
 }

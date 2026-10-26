@@ -31,6 +31,9 @@ Para la API local, `scripts/test-api.ts` presupone un Worker compilado en `127.0
 - `tests/front-calibration.test.ts`: lecturas del croquis y propuestas del frente.
 - `tests/patio-estimate.test.ts`: interpretación y procedencia de la propuesta de patio.
 - `tests/patio.test.ts`: dimensiones, escalones, niveles y detalles del patio.
+- `tests/pavement-lines.test.ts`: trazados rectos/diagonales, edición del recorrido, cambio de ancho girado, cruces, recortes y respaldos de líneas.
+- `tests/editor-tools.test.ts`: origen de coordenadas, redimensionado girado, medidas imperiales, contornos y ediciones atómicas.
+- `tests/regulations.test.ts`: aplicabilidad por diseño, jurisdicción, actualización e integridad de los PDF archivados.
 - `tests/precision.test.ts`: precisión de contornos, cantidades, exclusiones y materiales.
 - `tests/facade.test.ts`: modelo y edición de fachada.
 - `tests/camera-navigation.test.ts`: transiciones entre vistas y cámaras.

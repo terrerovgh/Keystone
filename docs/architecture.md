@@ -27,9 +27,11 @@ app/api/versions/route.ts          versiones guardadas por propietario
 
 `Project` y `Proposal` en `lib/project.ts` son el contrato central. Una propuesta contiene elementos editables, configuración, excepciones de cuadrícula y, cuando aplica, una línea base. Un `Element` tiene zona, clase, posición `(x,z)`, dimensiones, giro, nivel, altura, forma, puntos locales, soporte, acción, fuente de medida y nota.
 
-Las unidades internas de medidas de parcela son pies decimales. `rotation` se expresa en grados. La UI convierte y muestra pies/pulgadas; el paso de edición se ajusta a una pulgada. No redondees coordenadas de geometría al guardar si la precisión es necesaria para mantener el contorno.
+Las unidades internas de medidas de parcela son pies decimales. `rotation` se expresa en grados. La UI convierte y muestra pies/pulgadas; el paso de edición es configurable, inicialmente una pulgada. `lib/editor-tools.ts` comparte desplazamientos, ejes y redimensionado; `lib/design-editing.ts` confirma los cambios de forma atómica. No redondees coordenadas de geometría al guardar si la precisión es necesaria para mantener el contorno.
 
 El plano y la escena deben representar `proposal.elements`, no dos modelos independientes. `components/studio.tsx` mantiene la propuesta activa y coordina selección, cambios, alternativa, estado actual/propuesto y guardado. `applyElementPatch` concentra reglas de edición del inspector y herramientas; las vistas reciben los cambios por el flujo de estado de Studio. Si se añade un elemento o una regla especial, haz que opere sobre este mismo contrato.
+
+`lib/line-geometry.ts` define las líneas abiertas por sus puntos centrales y ancho. `shape: polyline` deriva su contorno al representar y calcular; `applyElementPatch` normaliza posición y límites sin desplazar el recorrido mundial al editar ancho o puntos. `lib/pavement-lines.ts` construye estas líneas y preserva su procedencia de diseño.
 
 `lib/geometry.ts` define la representación común de polígonos y operaciones booleanas. `visibleFootprint` resuelve el contorno visible/seleccionable incluyendo cortes de caminos. `surface` y `calculate` derivan cantidades. `components/plan-view.tsx` dibuja estas geometrías. `components/scene-view.tsx` y `lib/scene-models.ts`/`lib/patio-model.ts` crean la vista tridimensional a partir de ellas. Los escalones usan `stairTreads` para compartir perfil y huella.
 
@@ -58,6 +60,8 @@ Al cambiar un formato persistido:
 `lib/calculations.ts` consume la propuesta y genera líneas con cantidad, unidad, tarifa, origen y salvedades. `null` significa cotización pendiente: no debe convertirse en cero ni en precio final. `lib/engineering.ts` concentra cotas, pendientes, soporte, corte y relleno. `lib/exports.ts` crea los documentos a partir de los mismos resultados, no de una tabla paralela. Los modelos de `lib/patio-model.ts` agregan detalle visual de piscina, escalones, madera y mobiliario; ese detalle no altera cantidades salvo que lo comparta explícitamente el contrato geométrico.
 
 `lib/front-layout.ts` describe la alternativa de medialuna central. La puerta y los escalones fijan el eje, el paso cruza la jardinera semicircular y el contorno se resta en ambas vistas. No asumas que toda modificación visual es una dimensión medida. La imagen de render conceptual fija en `public/renders/` es referencia, no un render reactivo del modelo.
+
+`lib/symmetric-paving.ts` añade un diseño compartido de grecas al frente y al patio. Busca espacio dentro de la intersección entre el pavimento libre y su reflejo respecto al acceso, incluso con el eje girado. Reserva el contorno completo y un margen, usa el mismo tamaño para ambas zonas y guarda cada recorrido como `polyline`. No refleja ni altera elementos físicos. `hasGrecas(settings, zone)` resuelve el patrón por zona; `backPattern` ausente conserva el comportamiento histórico. La alternativa previa, su línea base y los datos personalizados permanecen intactos.
 
 ## UI
 

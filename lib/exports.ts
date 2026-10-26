@@ -1,9 +1,10 @@
+import { LEGAL_CATALOG, regulatoryFindings, regulatorySource } from './regulations';
 import { edgeDimensions } from './engineering';
 import { FRONT_CONTROLS, feetLabel, referenceFrame, SITE } from './site-reference';
 import { jsPDF } from 'jspdf';
 import { area, demolitionFor, bounds, footprint, intersection, pathData, polyFor, rect, union, visibleFootprint, type MultiPolygon } from './geometry';
 import { calculate, stages } from './calculations';
-import { baselineFor, fmt, SOURCES, usd, type Project, type Proposal, type Zone } from './project';
+import { hasGrecas, baselineFor, fmt, SOURCES, usd, type Project, type Proposal, type Zone } from './project';
 const plain=(s:string)=>s.replace(/′/g," ft").replace(/″/g,' in').replace(/[–—]/g,'-').replace(/→/g,' > ').replace(/·/g,' / ').replace(/²/g,'2').replace(/³/g,'3').replace(/…/g,'...').replace(/−/g,'-').replace(/[“”«»]/g,'"');
 function safeCell(value:unknown){const s=String(value??'');return '"'+(/^[=+@-]/.test(s)?"'"+s:s).replaceAll('"','""')+'"'}
 export function csv(project:Project,proposal:Proposal){
@@ -12,7 +13,7 @@ export function csv(project:Project,proposal:Proposal){
   rows.push([],['Subtotal con precio',c.subtotal.toFixed(2)],['Gastos / margen',c.overhead.toFixed(2)],['Impuesto estimado',c.tax.toFixed(2)],['Imprevistos',c.contingency.toFixed(2)],['IMPORTE PARCIAL CALCULADO',c.total.toFixed(2)],['Partidas pendientes',c.pending]);
   return '\uFEFF'+rows.map(row=>row.map(safeCell).join(',')).join('\r\n');
 }
-export function piecesCsv(project:Project,proposal:Proposal){const c=calculate(project,proposal),rows:unknown[][]=[['Zona','Pieza','Tipo','Fila','Columna','Área ft²','Completa','Contorno mundial (ft)']];for(const zone of ['front','back'] as const){const d=c.surfaces[zone];[...d.tiles,...d.pathTiles].forEach((t,i)=>rows.push([zone==='front'?'Frente':'Patio',`${zone==='front'?'F':'P'}${i+1}`,t.id.startsWith('path')?'Camino':'Cuadrícula',t.row,t.col,area(t.polygon).toFixed(4),t.full?'Sí':'Recorte',JSON.stringify(t.polygon)]))}return '\uFEFF'+rows.map(r=>r.map(safeCell).join(',')).join('\r\n')}
+export function piecesCsv(project:Project,proposal:Proposal){const c=calculate(project,proposal),rows:unknown[][]=[['Zona','Pieza','Tipo','Fila','Columna','Área ft²','Completa','Contorno mundial (ft)']];for(const zone of ['front','back'] as const){const d=c.surfaces[zone];[...d.tiles,...d.pathTiles].forEach((t,i)=>rows.push([zone==='front'?'Frente':'Patio',`${zone==='front'?'F':'P'}${i+1}`,t.id.startsWith('path')?'Camino':t.id.startsWith('greca')?'Paño de greca':'Cuadrícula',t.row,t.col,area(t.polygon).toFixed(4),hasGrecas(proposal.settings,zone)&&proposal.settings.method==='vaciado'?'Paño continuo':t.full?'Sí':'Recorte',JSON.stringify(t.polygon)]))}return '\uFEFF'+rows.map(r=>r.map(safeCell).join(',')).join('\r\n')}
 export function buildPdf(project:Project,proposal:Proposal):jsPDF {
   const c=calculate(project,proposal),s=proposal.settings,doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a3',compress:true}),W=420,H=297;
   let page=0;
@@ -79,15 +80,15 @@ export function buildPdf(project:Project,proposal:Proposal):jsPDF {
     const legend=mode==='demolition'?[['#ddb9a7','Pavimento / madera a retirar'],['#a86d54','Palmas: retiro o traslado'],['#8c9c72','Jardineras a modificar']]:[['#d8d4ca',mode==='existing'?'Superficie existente':'Concreto / piezas'],['#7c945b','Franjas verdes'],['#8c9c72','Jardineras'],['#8bbebc','Piscina conservada']];
     legend.forEach(([color,label])=>{doc.setFillColor(color);doc.rect(314,y-2,3,3,'F');text(label,321,y,8);y+=9});
     y+=9;text('CANTIDADES DE LA ZONA',314,y,9);y+=10;
-    const zt=c.totals[zone];for(const [label,value] of [['Superficie nueva',`${fmt(zt.area)} ft²`],['Concreto neto',`${fmt(zt.concrete)} ft²`],['Franjas verdes',`${fmt(zt.grass)} ft²`],['Retiro existente',`${fmt(zt.demolition)} ft²`],['Cuadros con recortes',`${zt.cuts} / ${zt.tiles}`],['Camino / piezas',`${zt.pathPieces}`],['Apoyo por verificar',`${fmt(zt.unverified)} ft²`]]){text(label,314,y,8,'#708264');text(value,399,y,9,'#526d45',{align:'right'});y+=9}
+    const zt=c.totals[zone];for(const [label,value] of [['Superficie nueva',`${fmt(zt.area)} ft²`],['Concreto neto',`${fmt(zt.concrete)} ft²`],['Franjas verdes',`${fmt(zt.grass)} ft²`],['Retiro existente',`${fmt(zt.demolition)} ft²`],[hasGrecas(s,zone)&&s.method==='vaciado'?'Paños continuos':'Cuadros con recortes',hasGrecas(s,zone)&&s.method==='vaciado'?`${zt.tiles}`:`${zt.cuts} / ${zt.tiles}`],['Camino / piezas',`${zt.pathPieces}`],['Apoyo por verificar',`${fmt(zt.unverified)} ft²`]]){text(label,314,y,8,'#708264');text(value,399,y,9,'#526d45',{align:'right'});y+=9}
     y+=7;y=para(mode==='layout'?'Identificadores F / P coinciden con el CSV de despiece. Piezas menores de 0.5 ft² se incluyen en cantidades, sin etiqueta por legibilidad.':'C: croquis / G: GIS / E: estimada / V: comprobada. Cotas de lados reales. Origen por tramo; las fotos no certifican dimensiones de campo.',314,y,85,8)+7;
     y=para(proposal.referenceEdition?'Base: parcela GIS del condado, huella LiDAR 2015, ortofoto local 2026 y fotos del propietario. Linderos, niveles, alturas y cierres pendientes del survey.':'Alternativa anterior: base estimada de croquis y fotografías. Linderos y cierres pendientes de survey.',314,y,85,8)+7;
     if(zone==='back')para('Verificar qué parte de la plataforma está sobre tierra y qué parte está elevada. No se define una estructura nueva con estas imágenes.',314,y,85,8);
   }
   for(const zone of ['front','back'] as Zone[]){
     sheet(`Despiece y cantidades / ${zone==='front'?'Frente':'Patio'}`,'D-00');let row=65;const d=c.surfaces[zone],t=c.totals[zone];
-    text(`Cuadro ${s.tile} ft / franja ${s.gap*12} in / giro ${s.angle} grados`,22,row,11);row+=12;
-    const entries=[['Superficie nueva',t.area,'ft²'],['Concreto neto',t.concrete,'ft²'],['Césped instalado',t.grass,'ft²'],['Concreto neto / volumen',t.volume,'yd³'],['Concreto con reserva',t.volume*(1+s.waste/100),'yd³'],['Cuadros completos',t.tiles-t.cuts,'ud'],['Cuadros recortados',t.cuts,'ud'],['Piezas de camino continuo',t.pathPieces,'ud'],['Apoyo sobre terreno',t.ground,'ft²'],['Apoyo elevado',t.elevated,'ft²'],['Apoyo pendiente de comprobar',t.unverified,'ft²'],['Área con cota de terreno',t.levelArea,'ft²'],['Corte con cotas indicadas',t.cut,'yd³'],['Relleno con cotas indicadas',t.fill,'yd³']];
+    text(hasGrecas(s,zone)?'Concreto continuo / grecas abiertas / líneas verdes editables':`Cuadro ${s.tile} ft / franja ${s.gap*12} in / giro ${s.angle} grados`,22,row,11);row+=12;
+    const entries=[['Superficie nueva',t.area,'ft²'],['Concreto neto',t.concrete,'ft²'],['Césped instalado',t.grass,'ft²'],['Concreto neto / volumen',t.volume,'yd³'],['Concreto con reserva',t.volume*(1+s.waste/100),'yd³'],...(hasGrecas(s,zone)&&s.method==='vaciado'?[['Paños continuos de concreto',t.tiles,'paños']]:[['Cuadros completos',t.tiles-t.cuts,'ud'],['Cuadros recortados',t.cuts,'ud']]),['Piezas de camino continuo',t.pathPieces,'ud'],['Apoyo sobre terreno',t.ground,'ft²'],['Apoyo elevado',t.elevated,'ft²'],['Apoyo pendiente de comprobar',t.unverified,'ft²'],['Área con cota de terreno',t.levelArea,'ft²'],['Corte con cotas indicadas',t.cut,'yd³'],['Relleno con cotas indicadas',t.fill,'yd³']];
     entries.forEach(([label,value,unit],i)=>{if(i%2===0){doc.setFillColor('#edf1e4');doc.rect(20,row-4,220,9,'F')}text(String(label),24,row,9);text(`${fmt(Number(value),2)} ${unit}`,235,row,10,'#52684d',{align:'right'});row+=10});
     text('COMPRA DE CÉSPED',263,79,11);let yy=92;for(const l of c.lines.filter(l=>l.zone===zone&&l.key.startsWith('turf-'))){text(l.name,263,yy,10);yy=para(l.note,263,yy+8,132,9)+10;text(`Cantidad facturable: ${fmt(l.qty??0,2)} ft²`,263,yy,11);yy+=15;para(`Sobrante frente a área instalada: ${fmt((l.qty??0)-t.grass,2)} ft². Incluye reserva, cortes, mínimos o redondeo del modo de compra.`,263,yy,132,9);yy+=30}
     para(`Artificial: ${t.rolls.pieces} cortes; longitud por acomodo ${fmt(t.rolls.cutLinear,2)} ft antes de reserva. ${t.rolls.rolls} rollos completos de ${s.rollWidth} × ${s.rollLength} ft si se compra por rollo. Dirección fija; el acomodo es conservador.`,263,yy,132,9);
@@ -100,7 +101,7 @@ export function buildPdf(project:Project,proposal:Proposal):jsPDF {
   let ly=83;layers.forEach(([label,note,color,h])=>{doc.setFillColor(color);doc.rect(22,ly,210,h,'F');text(label,245,ly+5,11);para(note,245,ly+12,145,9);ly+=h+17});
   para('Concreto y césped deben tener una solución compatible de niveles y salida de agua. Las franjas verdes por sí solas no demuestran permeabilidad del conjunto.',22,214,207,11);
   para('La base y el concreto no se especifican sobre una plataforma de madera sin comprobar su apoyo. El espesor, la mezcla, el refuerzo, las juntas y los detalles junto a piscina se definen al cerrar el diseño.',245,214,148,10);
-  text('CUADRO / FRANJA',22,254,10);text(`${s.tile} ft / ${fmt(s.gap*12)} in  |  Giro ${s.angle}°  |  ${s.method==='vaciado'?'Vaciado en obra':'Prefabricado'}  |  Césped ${s.turf}`,22,264,10);
+  text(s.frontPattern==='greca'||s.backPattern==='greca'?'DISEÑO DEL FRENTE / PATIO':'CUADRO / FRANJA',22,254,10);text(s.frontPattern==='greca'||s.backPattern==='greca'?`Frente: ${hasGrecas(s,'front')?'grecas':'cuadrícula'} / patio: ${hasGrecas(s,'back')?'grecas':'cuadrícula'}. Juntas técnicas por definir.`:`${s.tile} ft / ${fmt(s.gap*12)} in  |  Giro ${s.angle}°  |  ${s.method==='vaciado'?'Vaciado en obra':'Prefabricado'}  |  Césped ${s.turf}`,22,264,10);
   // Coordinate schedule makes every irregular footprint reproducible from the exported plan.
   sheet('Registro de elementos y contornos','D-02');
   let y=65;
@@ -136,6 +137,26 @@ export function buildPdf(project:Project,proposal:Proposal):jsPDF {
   sheet('Base de referencia y control de cantidades','V-04');text('REFERENCIAS DEL INMUEBLE',22,67,12);let ry=81;
   for(const [title,detail,url] of [['Parcela oficial de Miami-Dade',`Área geométrica ${fmt(SITE.parcelAreaSqft,1)} ft². Listado: 9,375 ft². No sustituye el survey firmado.`,SITE.parcelUrl],['Huella pública de la casa',`LiDAR / actualización 2015. ${fmt(SITE.buildingAreaSqft,1)} ft² de huella, no superficie habitable. Altura no disponible.`,SITE.buildingUrl],['Ortofoto del condado','Tesela local 2026, píxel nominal 3 in. Fecha exacta de vuelo no disponible; metadatos generales 2025/2026.',SITE.aerialUrl],['Fotografías y Apple Look Around','Fachada y patio: fotos del propietario. Apple Look Around confirma torre con ventana circular, ventanales y cocheras. Fecha de captura no visible; consulta 22 oct 2026.',SITE.appleUrl]]){text(title,22,ry,11);ry=para(detail,22,ry+7,370,9)+5;ry=para(url,22,ry,370,8)+12}
   text('REVISIÓN AUTOMÁTICA',22,ry,12);ry+=10;for(const warning of c.warnings){ry=para(warning,22,ry,370,9)+7}
+  sheet('Revisión normativa / North Miami','N-01');y=65;
+  y=para(`Consulta documental: ${LEGAL_CATALOG.reviewedAt}. Revisión preliminar del diseño activo; no constituye aprobación municipal ni certificación integral. Las casillas de preparación no resuelven alertas técnicas.`,22,y,370,10)+10;
+  for(const finding of regulatoryFindings(project,proposal)){
+    const details=plain(finding.detail),status=finding.status==='alert'?'ALERTA':finding.status==='pending'?'PENDIENTE':'REVISIÓN';
+    doc.setFontSize(9);const needed=doc.splitTextToSize(details,370).length*9*.39+35;
+    if(y+needed>265){sheet('Revisión normativa / continuación','N-01');y=65}
+    y=para(`${status} / ${finding.title}`,22,y,370,12,'#52684d')+5;
+    y=para(finding.detail,22,y,370,9)+5;
+    for(const id of finding.sources){const source=regulatorySource(id);if(!source)continue;text(source.title,22,y,8);doc.link(22,y-3,370,5,{url:source.url});y+=5}
+    text(project.checklist[`legal:${finding.id}`]?'Documentación preparada para revisión; aprobación pendiente.':'Documentación pendiente de preparar.',22,y,8);y+=12;
+  }
+  sheet('Biblioteca oficial / índice documental','N-02');y=65;
+  y=para(LEGAL_CATALOG.coverage,22,y,370,9)+10;
+  for(const source of LEGAL_CATALOG.documents){
+    doc.setFontSize(9);const needed=doc.splitTextToSize(plain(source.note),365).length*9*.39+31;
+    if(y+needed>263){sheet('Biblioteca oficial / continuación','N-02');y=65}
+    y=para(`${source.title} / ${source.authority}`,22,y,370,11,'#52684d')+5;
+    y=para(source.note,22,y,365,9)+5;
+    text(`Fuente oficial / consultado ${source.reviewedAt}`,22,y,8);doc.link(22,y-3,370,6,{url:source.url});y+=14;
+  }
   doc.setProperties({title:`Keystone Residence - ${proposal.name}`,author:'All Needs Discount LLC',subject:'Planificación preliminar de exteriores',creator:'Keystone Studio'});
   return doc;
 }

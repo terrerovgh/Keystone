@@ -1,3 +1,5 @@
+import { hasGrecas } from './project';
+import { lineOutline } from './line-geometry';
 import pc, { type MultiPolygon, type Polygon, type Ring } from 'polygon-clipping';
 import type { Element, Point, Proposal, Zone } from './project';
 export type { MultiPolygon };
@@ -9,11 +11,12 @@ export function rotate([x,z]:Point, angle:number):Point {const a=angle*Math.PI/1
 export function ringFor(e:Element):Ring {
   let points:Point[];
   if(e.shape==='ellipse')points=Array.from({length:64},(_,i)=>{const a=i/64*Math.PI*2;return [e.width/2+Math.cos(a)*e.width/2,e.depth/2+Math.sin(a)*e.depth/2]});
+  else if(e.shape==='polyline')points=lineOutline(e.points??[],e.lineWidth??0);
   else if(e.shape==='polygon'&&e.points)points=e.points;
   else if(e.kind==='stairs'&&e.style==='house-descent'){const b=Math.min(1.6,e.width*.12,e.depth*.8);points=[[0,0],[e.width,0],[e.width,e.depth-b],[e.width-b,e.depth],[b,e.depth],[0,e.depth-b]];}
   else points=[[0,0],[e.width,0],[e.width,e.depth],[0,e.depth]];
   const r=points.map(p=>{const t=rotate([p[0]-e.width/2,p[1]-e.depth/2],e.rotation);return [e.x+e.width/2+t[0],e.z+e.depth/2+t[1]] as Point});
-  return [...r,r[0]];
+  return r.length?[...r,r[0]]:[];
 }
 export const polyFor=(e:Element):MultiPolygon=>[[ringFor(e)]];
 export const rect=(x:number,z:number,w:number,d:number):MultiPolygon=>[[[[x,z],[x+w,z],[x+w,z+d],[x,z+d],[x,z]]]];
@@ -31,7 +34,7 @@ export function footprint(elements:Element[],zone:Zone){
   const active=elements.filter(e=>e.action!=='retirar');
   const hard=union(active.filter(e=>['pool','house','dock','stairs','fixed'].includes(e.kind)).map(polyFor));
   const allPaths=difference(union(active.filter(e=>e.kind==='path').map(polyFor)),hard);
-  const allGardens=difference(union(active.filter(e=>e.kind==='garden').map(polyFor)),union([hard,allPaths]));
+  const allGardens=difference(union(active.filter(e=>e.kind==='garden'&&e.style!=='greca-joint').map(polyFor)),union([hard,allPaths]));
   const exclusion=union([hard,allGardens]);
   const es=active.filter(e=>e.zone===zone);
   // Front owns any overlap between zones. This keeps material totals deterministic.
@@ -42,21 +45,43 @@ export function footprint(elements:Element[],zone:Zone){
 }
 export function demolitionFor(existing:Element[],proposed:Element[],zone:Zone){return difference(footprint(existing,zone).net,union(proposed.filter(e=>['paving','path'].includes(e.kind)&&e.action==='conservar').map(polyFor)))}
 export function visibleFootprint(e:Element,elements:Element[]){
+ if(e.style==='greca-joint')return intersection(polyFor(e),footprint(elements.map(v=>['paving','path'].includes(v.kind)&&v.action==='conservar'?{...v,kind:'fixed' as const}:v),e.zone).paving);
  if(['paving','path'].includes(e.kind)){
   const fp=footprint(elements,e.zone),later=elements.slice(elements.findIndex(v=>v.id===e.id)+1).filter(v=>v.zone===e.zone&&v.kind===e.kind&&v.action!=='retirar');
-  return difference(intersection(polyFor(e),e.kind==='path'?fp.paths:fp.paving),union(later.map(polyFor)));
+  const joints=e.kind==='paving'&&e.action!=='conservar'?elements.filter(v=>v.zone===e.zone&&v.style==='greca-joint'&&v.action!=='retirar').map(polyFor):[];
+  return difference(intersection(polyFor(e),e.kind==='path'?fp.paths:fp.paving),union([...later.map(polyFor),...joints]));
  }
  const hard=union(elements.filter(x=>x.id!==e.id&&x.action!=='retirar'&&['pool','house','dock','stairs','fixed'].includes(x.kind)).map(polyFor));
  return e.kind==='garden'?difference(polyFor(e),union([hard,...elements.filter(x=>x.kind==='path'&&x.action!=='retirar').map(polyFor)])):polyFor(e);
 }
 export function surface(proposal:Proposal,zone:Zone):Surface {
   const {elements,settings:s}=proposal, {paving,paths,net,gardens}=footprint(elements.map(e=>['paving','path'].includes(e.kind)&&e.action==='conservar'?{...e,kind:'fixed' as const}:e),zone);
+  if(hasGrecas(s,zone)){
+    const jointElements=elements.filter(e=>e.zone===zone&&e.style==='greca-joint'&&e.action!=='retirar');
+    const grass=intersection(paving,union(jointElements.map(polyFor))),concretePaving=difference(paving,grass),concrete=union([concretePaving,paths]);
+    const tiles:Tile[]=[],turfCuts:MultiPolygon[]=[];let rest=grass;
+    // Cada tramo se compra por separado; los encuentros se descuentan una sola vez.
+    for(const e of jointElements){const r=ringFor(e);for(let i=0;i<(r.length-1)/2-1;i++){const j=r.length-2-i,part=intersection(rest,[[[r[i],r[i+1],r[j-1],r[j],r[i]]]]);if(area(part)>1e-6){turfCuts.push(part);rest=difference(rest,part)}}}
+    if(area(rest)>1e-6)turfCuts.push(rest);
+    const pieces=(polys:MultiPolygon,prefix:string):Tile[]=>{
+      if(s.method==='vaciado')return polys.map((polygon,i)=>({id:`${prefix}:${zone}:${i}`,polygon:[polygon],full:false,row:0,col:i,x:bounds([polygon]).x,z:bounds([polygon]).z}));
+      const local=mapPoly(polys,p=>rotate([p[0]-s.gridX,p[1]-s.gridZ],-s.angle)),b=bounds(local),out:Tile[]=[];
+      if((Math.ceil((b.maxX-b.x)/s.tile)+2)*(Math.ceil((b.maxZ-b.z)/s.tile)+2)>16000)throw new Error('El despiece supera 16.000 piezas.');
+      for(let row=Math.floor(b.z/s.tile);row<Math.ceil(b.maxZ/s.tile);row++)for(let col=Math.floor(b.x/s.tile);col<Math.ceil(b.maxX/s.tile);col++){
+        const cell=intersection(local,rect(col*s.tile,row*s.tile,s.tile,s.tile));if(area(cell)<=1e-6)continue;
+        out.push({id:`${prefix}:${zone}:${col}:${row}`,polygon:mapPoly(cell,p=>{const q=rotate(p,s.angle);return [q[0]+s.gridX,q[1]+s.gridZ]}),full:Math.abs(area(cell)-s.tile*s.tile)<1e-4,row,col,x:col*s.tile,z:row*s.tile});
+      }return out;
+    };
+    tiles.push(...pieces(concretePaving,'greca'));
+    return {net,paving,paths,concrete,grass,gardens,tiles,pathTiles:pieces(paths,'path'),turfCuts,elevated:intersection(net,union(elements.filter(e=>e.zone===zone&&['paving','path'].includes(e.kind)&&e.support!=='terreno'&&e.action!=='retirar').map(polyFor)))};
+  }
   const local=(p:Point)=>{const q=rotate([p[0]-s.gridX,p[1]-s.gridZ],-s.angle);return q};
   const global=(p:Point)=>{const q=rotate(p,s.angle);return [q[0]+s.gridX,q[1]+s.gridZ] as Point};
-  const domain=mapPoly(paving,local),b=bounds(domain),pitch=s.tile+s.gap;
+  const manualGrass=intersection(paving,union(elements.filter(e=>e.zone===zone&&e.style==='greca-joint'&&e.action!=='retirar').map(polyFor)));
+  const domain=mapPoly(difference(paving,manualGrass),local),b=bounds(domain),pitch=s.tile+s.gap;
   const minC=Math.floor(b.x/pitch)-1,maxC=Math.ceil(b.maxX/pitch),minR=Math.floor(b.z/pitch)-1,maxR=Math.ceil(b.maxZ/pitch);
   if((maxC-minC+1)*(maxR-minR+1)>16000)throw new Error('La cuadrícula supera 16.000 cuadros. Reduce el área o aumenta el tamaño.');
-  const tiles:Tile[]=[], turfCuts:MultiPolygon[]=[],concreteShapes:MultiPolygon[]=[paths];
+  const tiles:Tile[]=[], turfCuts:MultiPolygon[]=manualGrass.map(p=>[p]),concreteShapes:MultiPolygon[]=[paths];
   for(let row=minR;row<=maxR;row++) for(let col=minC;col<=maxC;col++){
     const x=col*pitch,z=row*pitch,id=`${zone}:${col}:${row}`;
     const cell=intersection(domain,rect(x,z,s.tile,s.tile));

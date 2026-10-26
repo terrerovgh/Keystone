@@ -1,9 +1,24 @@
 import type { Element, Point } from './project';
 import { area, bounds, difference, intersection, polyFor, ringFor, rotate, union, type MultiPolygon } from './geometry';
+/** Un anillo simple no admite cruces, contactos no adyacentes ni retrocesos. */
 export function validRing(points:Point[]){
- const r=points.filter((p,i)=>!i||p[0]!==points[i-1][0]||p[1]!==points[i-1][1]);if(r.length>3&&r[0][0]===r.at(-1)![0]&&r[0][1]===r.at(-1)![1])r.pop();if(r.length<3)return false;
- const cross=(a:Point,b:Point,c:Point)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
- for(let i=0;i<r.length;i++)for(let j=i+1;j<r.length;j++){if(j===i+1||(i===0&&j===r.length-1))continue;const a=r[i],b=r[(i+1)%r.length],c=r[j],d=r[(j+1)%r.length];if(cross(a,b,c)*cross(a,b,d)<-1e-10&&cross(c,d,a)*cross(c,d,b)<-1e-10)return false}
+ if(!Array.isArray(points)||points.some(p=>!Array.isArray(p)||p.length!==2||!p.every(Number.isFinite)))return false;
+ // Los archivos históricos incluyen vértices consecutivos repetidos; se ignoran sin reescribirlos.
+ const r=points.filter((p,i)=>!i||p[0]!==points[i-1][0]||p[1]!==points[i-1][1]);
+ if(r.length>3&&Math.hypot(r[0][0]-r.at(-1)![0],r[0][1]-r.at(-1)![1])<1e-9)r.pop();
+ if(r.length<3)return false;
+ const eps=1e-9,cross=(a:Point,b:Point,c:Point)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
+ const on=(a:Point,b:Point,p:Point)=>Math.abs(cross(a,b,p))<=eps&&p[0]>=Math.min(a[0],b[0])-eps&&p[0]<=Math.max(a[0],b[0])+eps&&p[1]>=Math.min(a[1],b[1])-eps&&p[1]<=Math.max(a[1],b[1])+eps;
+ for(let i=0;i<r.length;i++){
+  const a=r[i],b=r[(i+1)%r.length],c=r[(i+2)%r.length];
+  if(Math.hypot(a[0]-b[0],a[1]-b[1])<=eps)return false;
+  if(Math.abs(cross(a,b,c))<=eps&&(b[0]-a[0])*(c[0]-b[0])+(b[1]-a[1])*(c[1]-b[1])<0)return false;
+  for(let j=i+1;j<r.length;j++){
+   if(j===i+1||(i===0&&j===r.length-1))continue;
+   const c=r[j],d=r[(j+1)%r.length],abC=cross(a,b,c),abD=cross(a,b,d),cdA=cross(c,d,a),cdB=cross(c,d,b);
+   if(((abC>eps&&abD< -eps)||(abC< -eps&&abD>eps))&&((cdA>eps&&cdB< -eps)||(cdA< -eps&&cdB>eps))||on(a,b,c)||on(a,b,d)||on(c,d,a)||on(c,d,b))return false;
+  }
+ }
  return Math.abs(r.reduce((s,a,i)=>{const b=r[(i+1)%r.length];return s+a[0]*b[1]-b[0]*a[1]},0))>.001;
 }
 export function finishedLevel(e:Element,x:number,z:number){return e.elevation+(x-e.x-e.width/2)*(e.slopeX??0)/100+(z-e.z-e.depth/2)*(e.slopeZ??0)/100}
