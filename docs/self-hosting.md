@@ -8,6 +8,8 @@ Un proxy propio exige autenticación HTTP Basic sobre HTTPS. Solo tras validarla
 
 El inicio aplica las migraciones SQL incluidas, sin copiar bases locales ni sesiones de Sites. Un proyecto guardado en el Site original puede trasladarse con su exportación e importación JSON desde la interfaz.
 
-Comprobaciones: `pnpm typecheck`, `node --import tsx --test tests/*.test.ts`, `node --test tests/private-gateway.test.mjs`, `pnpm build`, salud del contenedor, autenticación y pruebas reales de API. `pnpm lint` tiene incidencias previas que deben tratarse por separado.
+Comprobaciones: `pnpm typecheck`, `node --import tsx --test tests/*.test.ts`, `node --test tests/private-gateway.test.mjs`, `pnpm build`, salud del contenedor, autenticación y pruebas reales de API. Después de `pnpm build` y `pnpm start`, `node scripts/test-worker-render.mjs` comprueba la portada autenticada en el Worker local. Three.js se carga con `ssr: false`: su gestor global de recursos no puede inicializarse en workerd. `pnpm lint` tiene incidencias previas que deben tratarse por separado.
+
+En esta instalación también existe una ruta de archivos en `/etc/dokploy/traefik/dynamic/keystone.yaml`, editable desde el administrador Traefik del panel. El contenedor `tuf-infra-dns-doh-1` debe estar activo para el resolver DNS-01 en `127.0.0.1:5353`; su ausencia impide emitir o renovar certificados.
 
 Para actualizar, subir el commit a GitHub y desplegar el Compose desde Dokploy. Antes de sustituir una instancia con datos, detener el único escritor, respaldar `/srv/tuf/keystone` y comprobar una restauración aislada. Nunca usar `down -v`. La reversión conserva el directorio persistente y vuelve a desplegar la imagen previa; la primera instalación puede detenerse sin afectar otros servicios. Los respaldos externos dependen de la disponibilidad del destino existente de infraestructura.

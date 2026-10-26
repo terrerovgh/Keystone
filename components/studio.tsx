@@ -1,10 +1,10 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { ArrowDownToLine, ArrowLeft, ArrowRight, Check, ChevronDown, ChevronRight, CircleHelp, Copy, Download, Eye, FileText, FolderOpen, Grid2X2, Hand, History, Image as ImageIcon, Layers, Leaf, LockKeyhole, MapPin, Maximize2, MousePointer2, Move, PanelRightClose, Plus, Redo2, Ruler, Save, Settings2, SlidersHorizontal, Sprout, Trash2, Undo2, UnlockKeyhole, X, Box, Circle, Route, Armchair, TreePalm, PenLine } from 'lucide-react';
 import { hasGrecas, activeProposal, baselineFor, upgradeProject, createProject, fmt, SOURCES, usd, validProject, type Element, type Kind, type Project, type Proposal, type Settings, type Zone } from '@/lib/project';
 import { calculate, stages } from '@/lib/calculations';
 import PlanView, { type Stage, type Tool } from './plan-view';
-import SceneView from './scene-view';
 import PatioEstimateReview from './patio-estimate-review';
 import PatioReview from './patio-review';
 import { createPavementLine } from '@/lib/pavement-lines';
@@ -25,6 +25,8 @@ import { validRing } from '@/lib/engineering';
 import { FRONT_CONTROLS, SITE } from '@/lib/site-reference';
 import { area, polyFor, visibleFootprint } from '@/lib/geometry';
 type Tab='design'|'budget'|'work';
+// Three.js crea recursos de navegador al importar; el Worker no debe evaluarlos.
+const SceneView = dynamic(() => import('./scene-view'), { ssr: false, loading: () => <div role="status">Preparando vista 3D…</div> });
 type Modal='export'|'versions'|'compare'|'photos'|'help'|null;
 const zoneName=(z:Zone|'shared')=>z==='front'?'Frente':z==='back'?'Patio':'Compartidos';
 const kindName:Record<Kind,string>={paving:'Pavimento',garden:'Jardinera',path:'Camino',pool:'Piscina',house:'Casa',palm:'Palma',furniture:'Mobiliario',dock:'Muelle',stairs:'Escalones',fixed:'Plataforma conservada'};
